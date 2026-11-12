@@ -20,14 +20,13 @@ class TransactionDao extends DatabaseAccessor<AppDatabase> {
   ).watchSingle().map((row) => row.read<int>('balance_minor'));
 
   Stream<DateTime?> watchFirstTransactionMonth() {
-    final earliestDate = db.transactions.createdAt.min();
-    return (selectOnly(
-      db.transactions,
-    )..addColumns([earliestDate])).watchSingle().map((row) {
-      final firstDate = row.read(earliestDate);
-      return firstDate == null
-          ? null
-          : DateTime(firstDate.year, firstDate.month);
+    final query = select(db.transactions)
+      ..orderBy([(t) => OrderingTerm.asc(t.createdAt)])
+      ..limit(1);
+    return query.watch().map((rows) {
+      if (rows.isEmpty) return null;
+      final firstDate = rows.first.createdAt;
+      return DateTime(firstDate.year, firstDate.month);
     });
   }
 

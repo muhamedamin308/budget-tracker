@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_format.dart';
+import '../../../core/widgets/app_animations.dart';
 import 'budget_bloc.dart';
 
 Future<void> showMonthlyLimitDialog(BuildContext context) =>
@@ -11,6 +12,10 @@ Future<void> showMonthlyLimitDialog(BuildContext context) =>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      backgroundColor: Theme.of(context).cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
       builder: (_) => const _MonthlyLimitSheet(),
     );
 
@@ -35,6 +40,7 @@ class _MonthlyLimitSheetState extends State<_MonthlyLimitSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return BlocListener<BudgetBloc, BudgetState>(
       listenWhen: (previous, current) =>
@@ -48,7 +54,7 @@ class _MonthlyLimitSheetState extends State<_MonthlyLimitSheet> {
         ),
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             child: BlocBuilder<BudgetBloc, BudgetState>(
               builder: (context, state) {
                 final month = switch (state) {
@@ -75,30 +81,43 @@ class _MonthlyLimitSheetState extends State<_MonthlyLimitSheet> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: AppTheme.primaryEmerald.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12),
+                                gradient: AppTheme.primaryGradient,
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.primaryEmerald.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
                               ),
                               child: const Icon(
                                 Icons.account_balance_wallet_rounded,
-                                color: AppTheme.primaryEmerald,
+                                color: Colors.white,
                                 size: 22,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 14),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'Monthly Limit',
                                   style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.4,
                                   ),
                                 ),
                                 Text(
                                   DateFormat.yMMMM().format(month),
-                                  style: theme.textTheme.bodySmall,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ],
                             ),
@@ -111,17 +130,19 @@ class _MonthlyLimitSheetState extends State<_MonthlyLimitSheet> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     switch (state) {
                       BudgetLoading() => const SizedBox(
                           height: 100,
                           child: Center(child: CircularProgressIndicator()),
                         ),
                       BudgetError(:final message, :final month) => Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: AppTheme.expenseCoral.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(16),
+                            color: AppTheme.expenseCoral.withValues(
+                              alpha: isDark ? 0.15 : 0.1,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: AppTheme.expenseCoral.withValues(alpha: 0.3),
                             ),
@@ -129,17 +150,35 @@ class _MonthlyLimitSheetState extends State<_MonthlyLimitSheet> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                message,
-                                style: const TextStyle(
-                                  color: AppTheme.expenseCoral,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline_rounded,
+                                    color: AppTheme.expenseCoral,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      message,
+                                      style: const TextStyle(
+                                        color: AppTheme.expenseCoral,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 14),
                               FilledButton.tonal(
                                 onPressed: () => context.read<BudgetBloc>().add(
                                   const BudgetRetryRequested(),
+                                ),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppTheme.expenseCoral.withValues(
+                                    alpha: 0.15,
+                                  ),
                                 ),
                                 child: Text('Retry for ${DateFormat.yMMMM().format(month)}'),
                               ),
@@ -158,37 +197,54 @@ class _MonthlyLimitSheetState extends State<_MonthlyLimitSheet> {
                             children: [
                               Container(
                                 width: double.infinity,
-                                padding: const EdgeInsets.all(14),
+                                padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(16),
+                                  color: isDark
+                                      ? const Color(0xFF1E293B)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(18),
                                   border: Border.all(
-                                    color: theme.dividerColor.withValues(alpha: 0.2),
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.08)
+                                        : const Color(0xFFE2E8F0),
                                   ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: isDark ? 0.2 : 0.03,
+                                      ),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(
-                                      Icons.info_outline_rounded,
-                                      size: 18,
-                                      color: AppTheme.primaryEmerald,
+                                    Icon(
+                                      status.limitMinor == null
+                                          ? Icons.info_outline_rounded
+                                          : Icons.check_circle_rounded,
+                                      size: 20,
+                                      color: status.limitMinor == null
+                                          ? AppTheme.infoBlue
+                                          : AppTheme.incomeGreen,
                                     ),
-                                    const SizedBox(width: 10),
+                                    const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
                                         status.limitMinor == null
                                             ? 'No spending limit set for this month yet.'
                                             : 'Current limit: ${formatMinor(status.limitMinor!)}',
                                         style: const TextStyle(
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13.5,
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 18),
                               TextFormField(
                                 key: const ValueKey('monthly-limit-amount'),
                                 controller: _amountController,
@@ -197,20 +253,21 @@ class _MonthlyLimitSheetState extends State<_MonthlyLimitSheet> {
                                   decimal: true,
                                 ),
                                 style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.5,
                                 ),
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                   labelText: 'Monthly Limit Amount',
                                   hintText: '0.00',
-                                  prefixIcon: const Icon(
+                                  prefixIcon: Icon(
                                     Icons.payments_outlined,
-                                    size: 20,
+                                    size: 22,
                                   ),
                                   suffixText: 'EGP',
-                                  suffixStyle: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 15,
+                                  suffixStyle: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
                                   ),
                                 ),
                                 validator: (value) {
@@ -224,40 +281,103 @@ class _MonthlyLimitSheetState extends State<_MonthlyLimitSheet> {
                                   return null;
                                 },
                               ),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  for (final preset in [1000, 3000, 5000, 10000])
+                                    ActionChip(
+                                      label: Text('$preset EGP'),
+                                      onPressed: () {
+                                        setState(() {
+                                          _amountController.text = '$preset';
+                                        });
+                                      },
+                                      backgroundColor: isDark
+                                          ? const Color(0xFF1E293B)
+                                          : const Color(0xFFF1F5F9),
+                                      side: BorderSide(
+                                        color: isDark
+                                            ? Colors.white.withValues(alpha: 0.1)
+                                            : const Color(0xFFE2E8F0),
+                                      ),
+                                      labelStyle: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                ],
+                              ),
                               if (errorMessage != null) ...[
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 14),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
+                                    horizontal: 14,
+                                    vertical: 12,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.expenseCoral.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text(
-                                    errorMessage,
-                                    style: const TextStyle(
-                                      color: AppTheme.expenseCoral,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
+                                    color: AppTheme.expenseCoral.withValues(
+                                      alpha: isDark ? 0.15 : 0.1,
                                     ),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: AppTheme.expenseCoral.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.error_outline_rounded,
+                                        color: AppTheme.expenseCoral,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          errorMessage,
+                                          style: const TextStyle(
+                                            color: AppTheme.expenseCoral,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
-                              const SizedBox(height: 20),
-                              FilledButton(
-                                onPressed: isSaving ? null : () => _save(context),
-                                child: isSaving
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
+                              const SizedBox(height: 24),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 54,
+                                child: FilledButton(
+                                  onPressed: isSaving ? null : () => _save(context),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryEmerald,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                  ),
+                                  child: isSaving
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Save',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 16,
+                                          ),
                                         ),
-                                      )
-                                    : const Text('Save'),
+                                ),
                               ),
                             ],
                           ),

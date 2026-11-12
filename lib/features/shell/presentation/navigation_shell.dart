@@ -22,7 +22,9 @@ class NavigationShell extends StatelessWidget {
         body: navigationShell,
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor,
+            color: isDark
+                ? const Color(0xFF0B1120)
+                : Colors.white,
             border: Border(
               top: BorderSide(
                 color: isDark
@@ -33,9 +35,9 @@ class NavigationShell extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
-                blurRadius: 16,
-                offset: const Offset(0, -4),
+                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
+                blurRadius: 20,
+                offset: const Offset(0, -6),
               ),
             ],
           ),
@@ -48,17 +50,17 @@ class NavigationShell extends StatelessWidget {
             destinations: const [
               NavigationDestination(
                 icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home),
+                selectedIcon: Icon(Icons.home_rounded),
                 label: 'Home',
               ),
               NavigationDestination(
                 icon: Icon(Icons.insights_outlined),
-                selectedIcon: Icon(Icons.insights),
+                selectedIcon: Icon(Icons.insights_rounded),
                 label: 'Stats',
               ),
               NavigationDestination(
                 icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings),
+                selectedIcon: Icon(Icons.settings_rounded),
                 label: 'Settings',
               ),
             ],

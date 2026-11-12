@@ -23,10 +23,15 @@ class AddCategory {
   Future<Either<Failure, Unit>> call({
     required String name,
     required CategoryType type,
+    required String iconKey,
   }) {
     final validation = _validateName(name);
     if (validation != null) return Future.value(Left(validation));
-    return _repository.addCategory(name: name.trim(), type: type);
+    return _repository.addCategory(
+      name: name.trim(),
+      type: type,
+      iconKey: iconKey,
+    );
   }
 }
 
@@ -36,7 +41,11 @@ class RenameCategory {
 
   final CategoryRepository _repository;
 
-  Future<Either<Failure, Unit>> call({required int id, required String name}) {
+  Future<Either<Failure, Unit>> call({
+    required int id,
+    required String name,
+    required String iconKey,
+  }) {
     if (id <= 0) {
       return Future.value(
         const Left(ValidationFailure('Select a valid category.')),
@@ -44,7 +53,11 @@ class RenameCategory {
     }
     final validation = _validateName(name);
     if (validation != null) return Future.value(Left(validation));
-    return _repository.renameCategory(id: id, name: name.trim());
+    return _repository.renameCategory(
+      id: id,
+      name: name.trim(),
+      iconKey: iconKey,
+    );
   }
 }
 

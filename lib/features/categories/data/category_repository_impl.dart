@@ -36,12 +36,13 @@ class CategoryRepositoryImpl implements CategoryRepository {
   Future<Either<Failure, Unit>> addCategory({
     required String name,
     required CategoryType type,
+    required String iconKey,
   }) => _persist(
     () => _categoryDao.insert(
       CategoriesCompanion.insert(
         name: name,
         type: _toDatabaseType(type),
-        iconKey: 'custom',
+        iconKey: iconKey,
       ),
     ),
     'Could not add the category',
@@ -51,8 +52,9 @@ class CategoryRepositoryImpl implements CategoryRepository {
   Future<Either<Failure, Unit>> renameCategory({
     required int id,
     required String name,
+    required String iconKey,
   }) => _persist(
-    () => _categoryDao.rename(id, name),
+    () => _categoryDao.rename(id, name, iconKey),
     'Could not rename the category',
   );
 

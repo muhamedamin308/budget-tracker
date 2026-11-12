@@ -13,11 +13,13 @@ abstract interface class CategoryRepository {
   Future<Either<Failure, Unit>> addCategory({
     required String name,
     required CategoryType type,
+    required String iconKey,
   });
 
   Future<Either<Failure, Unit>> renameCategory({
     required int id,
     required String name,
+    required String iconKey,
   });
 
   Future<Either<Failure, Unit>> archiveCategory(int id);

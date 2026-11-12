@@ -54,7 +54,11 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
     CategoryAdded event,
     Emitter<CategoriesState> emit,
   ) async {
-    final result = await _addCategory(name: event.name, type: event.type);
+    final result = await _addCategory(
+      name: event.name,
+      type: event.type,
+      iconKey: event.iconKey,
+    );
     result.fold((failure) => _emitFailure(emit, failure), (_) {});
   }
 
@@ -62,7 +66,11 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
     CategoryRenamed event,
     Emitter<CategoriesState> emit,
   ) async {
-    final result = await _renameCategory(id: event.id, name: event.name);
+    final result = await _renameCategory(
+      id: event.id,
+      name: event.name,
+      iconKey: event.iconKey,
+    );
     result.fold((failure) => _emitFailure(emit, failure), (_) {});
   }
 
@@ -109,23 +117,33 @@ final class CategoriesRetryRequested extends CategoriesEvent {
 }
 
 final class CategoryAdded extends CategoriesEvent {
-  const CategoryAdded({required this.name, required this.type});
+  const CategoryAdded({
+    required this.name,
+    required this.type,
+    required this.iconKey,
+  });
 
   final String name;
   final CategoryType type;
+  final String iconKey;
 
   @override
-  List<Object?> get props => [name, type];
+  List<Object?> get props => [name, type, iconKey];
 }
 
 final class CategoryRenamed extends CategoriesEvent {
-  const CategoryRenamed({required this.id, required this.name});
+  const CategoryRenamed({
+    required this.id,
+    required this.name,
+    required this.iconKey,
+  });
 
   final int id;
   final String name;
+  final String iconKey;
 
   @override
-  List<Object?> get props => [id, name];
+  List<Object?> get props => [id, name, iconKey];
 }
 
 final class CategoryArchived extends CategoriesEvent {

@@ -26,7 +26,7 @@ class MonthCubit extends Cubit<DateTime> {
   bool get canGoPrevious {
     final previousMonth = DateTime(state.year, state.month - 1);
     final firstMonth = _firstTransactionMonth;
-    return firstMonth != null && !previousMonth.isBefore(firstMonth);
+    return firstMonth == null || !previousMonth.isBefore(firstMonth);
   }
 
   bool get canGoNext => state.isBefore(_firstOfMonth(DateTime.now()));

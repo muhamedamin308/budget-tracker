@@ -72,9 +72,12 @@ class CategoryDao extends DatabaseAccessor<AppDatabase> {
   Future<int> insert(CategoriesCompanion category) =>
       into(db.categories).insert(category);
 
-  Future<int> rename(int id, String name) =>
-      (update(db.categories)..where((category) => category.id.equals(id)))
-          .write(CategoriesCompanion(name: Value(name)));
+  Future<int> rename(int id, String name, String iconKey) =>
+      (update(
+        db.categories,
+      )..where((category) => category.id.equals(id))).write(
+        CategoriesCompanion(name: Value(name), iconKey: Value(iconKey)),
+      );
 
   Future<int> setArchived(int id, bool isArchived) =>
       (update(db.categories)..where((category) => category.id.equals(id)))
