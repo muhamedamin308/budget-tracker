@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/app_animations.dart';
 import '../../../core/widgets/entrance_animation.dart';
 import '../../categories/presentation/categories_bloc.dart';
 import 'categories_page.dart';

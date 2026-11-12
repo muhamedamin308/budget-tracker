@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/di/injection.dart';
+import '../../../core/services/widget_sync_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/category_icons.dart';
 import '../../../core/widgets/app_animations.dart';
@@ -122,6 +124,21 @@ class CategoriesPage extends StatelessWidget {
                       onTap: () => showRecurringRules(context),
                     ),
                   ),
+                  Container(
+                    width: 1,
+                    height: 36,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : const Color(0xFFE2E8F0),
+                  ),
+                  Expanded(
+                    child: _SettingsAction(
+                      icon: Icons.widgets_rounded,
+                      label: 'Widget',
+                      subtitle: 'Home screen',
+                      onTap: () => _showWidgetSettingsDialog(context),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -160,6 +177,191 @@ class CategoriesPage extends StatelessWidget {
     if (draft == null || !context.mounted) return;
     context.read<CategoriesBloc>().add(
       CategoryAdded(name: draft.name, type: draft.type, iconKey: draft.iconKey),
+    );
+  }
+
+  Future<void> _showWidgetSettingsDialog(BuildContext context) async {
+    final syncService = getIt<WidgetSyncService>();
+    final isSupported = await syncService.isPinWidgetSupported();
+
+    if (!context.mounted) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryEmerald.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.widgets_rounded,
+                            color: AppTheme.primaryEmerald,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Home Screen Widget',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              'Android home screen companion',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      tooltip: 'Close',
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E293B),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFF334155)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'BUDGET TRACKER',
+                            style: TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryEmerald,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              '+ Expense',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        syncService.isBalanceHidden ? '••••••' : 'Live Balance',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Budget: Spent vs. Limit progress',
+                        style: TextStyle(
+                          color: Color(0xFFCBD5E1),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text(
+                    'Hide balance on widget',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  subtitle: const Text(
+                    'Displays •••••• instead of your balance for privacy.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  value: syncService.isBalanceHidden,
+                  activeTrackColor: AppTheme.primaryEmerald,
+                  onChanged: (val) async {
+                    await syncService.setBalanceHidden(val);
+                    setSheetState(() {});
+                  },
+                ),
+                const Divider(),
+                const SizedBox(height: 10),
+                if (isSupported)
+                  FilledButton.icon(
+                    onPressed: () async {
+                      final success = await syncService.requestPinWidget();
+                      if (context.mounted) {
+                        Navigator.pop(sheetContext);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              success
+                                  ? 'Widget pin prompt sent to home screen!'
+                                  : 'Could not pin widget.',
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.add_to_home_screen_rounded),
+                    label: const Text('Add Widget to Home Screen'),
+                  )
+                else
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await syncService.syncNow();
+                      if (context.mounted) {
+                        Navigator.pop(sheetContext);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Widget refreshed!')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.sync_rounded),
+                    label: const Text('Sync Widget Data Now'),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

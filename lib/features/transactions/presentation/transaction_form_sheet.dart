@@ -6,7 +6,6 @@ import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/category_icons.dart';
 import '../../../core/utils/money_format.dart';
-import '../../../core/widgets/app_animations.dart';
 import '../domain/transaction_entity.dart';
 import 'transaction_form_cubit.dart';
 import 'wallet_bloc.dart';

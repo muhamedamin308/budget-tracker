@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:injectable/injectable.dart';
@@ -12,8 +13,12 @@ import '../../features/shell/presentation/navigation_shell.dart';
 
 @singleton
 class AppRouter {
+  static final GlobalKey<NavigatorState> rootNavigatorKey =
+      GlobalKey<NavigatorState>();
+
   AppRouter()
     : router = GoRouter(
+        navigatorKey: rootNavigatorKey,
         initialLocation: '/',
         routes: [
           StatefulShellRoute.indexedStack(

@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_format.dart';
-import '../../../core/widgets/app_animations.dart';
 import 'budget_bloc.dart';
 
 Future<void> showMonthlyLimitDialog(BuildContext context) =>

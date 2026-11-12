@@ -17,6 +17,7 @@ import 'package:budget_tracker/core/database/daos/transaction_dao.dart'
     as _i584;
 import 'package:budget_tracker/core/di/injection.dart' as _i263;
 import 'package:budget_tracker/core/router/app_router.dart' as _i729;
+import 'package:budget_tracker/core/services/widget_sync_service.dart' as _i645;
 import 'package:budget_tracker/features/budget/data/budget_repository_impl.dart'
     as _i13;
 import 'package:budget_tracker/features/budget/domain/budget_repository.dart'
@@ -163,6 +164,12 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i1061.ArchiveCategory>(
       () => _i1061.ArchiveCategory(gh<_i601.CategoryRepository>()),
+    );
+    gh.singleton<_i645.WidgetSyncService>(
+      () => _i645.WidgetSyncServiceImpl(
+        gh<_i403.WatchBalance>(),
+        gh<_i1004.WatchBudgetStatus>(),
+      ),
     );
     gh.factory<_i839.WalletBloc>(
       () => _i839.WalletBloc(gh<_i403.WatchBalance>()),
