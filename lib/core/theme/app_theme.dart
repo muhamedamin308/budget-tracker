@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 abstract final class AppTheme {
   static const Color primaryEmerald = Color(0xFF0D9373);
@@ -283,65 +284,67 @@ abstract final class AppTheme {
             : const Color(0xFFE2E8F0),
         borderRadius: BorderRadius.circular(8),
       ),
-      textTheme: TextTheme(
-        headlineLarge: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -1,
-          color: colorScheme.onSurface,
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 26,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.6,
-          color: colorScheme.onSurface,
-        ),
-        headlineSmall: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.4,
-          color: colorScheme.onSurface,
-        ),
-        titleLarge: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.3,
-          color: colorScheme.onSurface,
-        ),
-        titleMedium: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.2,
-          color: colorScheme.onSurface,
-        ),
-        titleSmall: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.1,
-          color: colorScheme.onSurfaceVariant,
-        ),
-        bodyLarge: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w400,
-          letterSpacing: 0.1,
-          color: colorScheme.onSurface,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          letterSpacing: 0.1,
-          color: colorScheme.onSurfaceVariant,
-        ),
-        bodySmall: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          letterSpacing: 0.2,
-          color: colorScheme.onSurfaceVariant,
-        ),
-        labelLarge: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
+      textTheme: GoogleFonts.interTextTheme(
+        TextTheme(
+          headlineLarge: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -1,
+            color: colorScheme.onSurface,
+          ),
+          headlineMedium: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.6,
+            color: colorScheme.onSurface,
+          ),
+          headlineSmall: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.4,
+            color: colorScheme.onSurface,
+          ),
+          titleLarge: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
+            color: colorScheme.onSurface,
+          ),
+          titleMedium: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.2,
+            color: colorScheme.onSurface,
+          ),
+          titleSmall: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.1,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          bodyLarge: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.1,
+            color: colorScheme.onSurface,
+          ),
+          bodyMedium: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.1,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          bodySmall: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.2,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          labelLarge: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.3,
+          ),
         ),
       ),
     );

@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:home_widget/home_widget.dart';
 
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'core/services/widget_sync_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_cubit.dart';
 import 'features/recurring/domain/recurring_use_cases.dart';
 import 'features/recurring/presentation/recurring_generation_runner.dart';
 import 'features/transactions/domain/transaction_entity.dart';
@@ -73,13 +75,20 @@ class _BudgetTrackerAppState extends State<BudgetTrackerApp>
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Budget Tracker',
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
-      routerConfig: getIt<AppRouter>().router,
-      debugShowCheckedModeBanner: false,
+    return BlocProvider.value(
+      value: getIt<ThemeCubit>(),
+      child: BlocBuilder<ThemeCubit, ThemeMode>(
+        builder: (context, themeMode) {
+          return MaterialApp.router(
+            title: 'Budget Tracker',
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: themeMode,
+            routerConfig: getIt<AppRouter>().router,
+            debugShowCheckedModeBanner: false,
+          );
+        },
+      ),
     );
   }
 }

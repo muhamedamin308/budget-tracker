@@ -10,16 +10,16 @@ import '../../../core/utils/category_icons.dart';
 import '../../../core/utils/money_format.dart';
 import '../domain/transaction_entity.dart';
 import 'transaction_form_cubit.dart';
-import 'wallet_bloc.dart';
+import 'balance_bloc.dart';
 
 Future<void> showTransactionForm(
   BuildContext context, {
   required TransactionKind kind,
   TransactionEntity? transaction,
 }) {
-  WalletBloc? walletBloc;
+  BalanceBloc? balanceBloc;
   try {
-    walletBloc = context.read<WalletBloc>();
+    balanceBloc = context.read<BalanceBloc>();
   } catch (_) {}
 
   return showModalBottomSheet<void>(
@@ -38,9 +38,9 @@ Future<void> showTransactionForm(
         child: _TransactionFormSheet(transaction: transaction),
       );
 
-      if (walletBloc != null) {
-        content = BlocProvider<WalletBloc>.value(
-          value: walletBloc,
+      if (balanceBloc != null) {
+        content = BlocProvider<BalanceBloc>.value(
+          value: balanceBloc,
           child: content,
         );
       }
@@ -334,23 +334,23 @@ class _TransactionFormSheet extends StatelessWidget {
   Future<void> _save(BuildContext context, TransactionFormState state) async {
     if (state.kind == TransactionKind.expense) {
       final amount = double.tryParse(state.amountText.trim());
-      WalletState? walletState;
+      BalanceState? balanceState;
       try {
-        walletState = context.read<WalletBloc>().state;
+        balanceState = context.read<BalanceBloc>().state;
       } catch (_) {
-        // WalletBloc is not available in the current context
+        // BalanceBloc is not available in the current context
       }
 
       if (amount != null &&
           amount.isFinite &&
-          walletState is WalletLoaded &&
-          !walletState.isNegative) {
+          balanceState is BalanceLoaded &&
+          !balanceState.isNegative) {
         final amountMinor = (amount * 100).round();
         final restoredExpense = transaction?.kind == TransactionKind.expense
             ? transaction!.amountMinor
             : 0;
         final projectedBalance =
-            walletState.balanceMinor + restoredExpense - amountMinor;
+            balanceState.balanceMinor + restoredExpense - amountMinor;
         if (projectedBalance < 0) {
           final confirmed = await _confirmNegativeBalance(
             context,

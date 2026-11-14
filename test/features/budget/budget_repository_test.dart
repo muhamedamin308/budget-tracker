@@ -13,13 +13,16 @@ void main() {
   late CategoryDao categoryDao;
   late TransactionDao transactionDao;
   late BudgetRepositoryImpl repository;
+  late int defaultWalletId;
 
-  setUp(() {
+  setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
     budgetDao = BudgetDao(database);
     categoryDao = CategoryDao(database);
     transactionDao = TransactionDao(database);
     repository = BudgetRepositoryImpl(budgetDao);
+    final wallets = await database.select(database.wallets).get();
+    defaultWalletId = wallets.first.id;
   });
 
   tearDown(() async {
@@ -40,6 +43,7 @@ void main() {
           type: TransactionType.expense,
           amountMinor: 80000,
           categoryId: expense.id,
+          walletId: defaultWalletId,
           createdAt: DateTime(2026, 11, 12, 12),
         ),
       );

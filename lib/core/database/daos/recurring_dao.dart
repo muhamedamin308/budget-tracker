@@ -70,6 +70,7 @@ class RecurringDao extends DatabaseAccessor<AppDatabase> {
             type: rule.type,
             amountMinor: rule.amountMinor,
             categoryId: rule.categoryId,
+            walletId: rule.walletId,
             title: Value(rule.title),
             createdAt: dueDate,
             recurringRuleId: Value(rule.id),

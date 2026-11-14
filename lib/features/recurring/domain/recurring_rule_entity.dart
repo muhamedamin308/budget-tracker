@@ -15,6 +15,7 @@ class RecurringRuleEntity extends Equatable {
     required this.endDate,
     required this.lastGeneratedDue,
     required this.isActive,
+    required this.walletId,
   });
 
   final int id;
@@ -28,6 +29,7 @@ class RecurringRuleEntity extends Equatable {
   final DateTime? endDate;
   final DateTime? lastGeneratedDue;
   final bool isActive;
+  final int walletId;
 
   @override
   List<Object?> get props => [
@@ -42,6 +44,7 @@ class RecurringRuleEntity extends Equatable {
     endDate,
     lastGeneratedDue,
     isActive,
+    walletId,
   ];
 }
 
@@ -55,6 +58,7 @@ class RecurringRuleDraft {
     required this.startDate,
     this.endDate,
     this.title,
+    this.walletId,
   });
 
   final int? id;
@@ -65,4 +69,5 @@ class RecurringRuleDraft {
   final DateTime startDate;
   final DateTime? endDate;
   final String? title;
+  final int? walletId;
 }

@@ -9,7 +9,7 @@ void main() {
       transactions: [
         _transaction(kind: TransactionKind.income, amount: 10000),
         _transaction(amount: 500, categoryId: 1, categoryName: 'Food'),
-        _transaction(amount: 250, categoryId: 2, categoryName: 'Transport'),
+        _transaction(amount: 250, categoryId: 2, categoryName: 'Transport', day: 2),
         _transaction(amount: 500, categoryId: 1, categoryName: 'Food', day: 31),
         _transaction(amount: 900, year: 2025, day: 31, month: 12),
         _transaction(amount: 900, day: 1, month: 2),
@@ -75,6 +75,7 @@ TransactionEntity _transaction({
   int year = 2026,
   int month = 1,
   int day = 1,
+  int walletId = 1,
 }) => TransactionEntity(
   id: 1,
   kind: kind,
@@ -86,4 +87,5 @@ TransactionEntity _transaction({
   createdAt: DateTime(year, month, day, 12),
   recurringRuleId: null,
   recurringDueDate: null,
+  walletId: walletId,
 );

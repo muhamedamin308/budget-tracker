@@ -3,14 +3,32 @@ import 'package:budget_tracker/core/database/app_database.dart';
 import 'package:budget_tracker/core/di/injection.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late AppDatabase testDatabase;
 
   setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('plugins.flutter.io/path_provider'),
+      (MethodCall methodCall) async => '.',
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('esys.at/home_widget'),
+      (MethodCall methodCall) async => null,
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('esys.at/home_widget/events'),
+      (MethodCall methodCall) async => null,
+    );
+
     configureDependencies();
-    await getIt.unregister<AppDatabase>();
+    getIt.allowReassignment = true;
     testDatabase = AppDatabase(NativeDatabase.memory());
     getIt.registerSingleton<AppDatabase>(testDatabase);
   });

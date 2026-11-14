@@ -20,12 +20,33 @@ class Categories extends Table {
   ];
 }
 
+class Wallets extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text().withLength(min: 1, max: 40)();
+  TextColumn get iconKey => text()();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
+}
+
+class Transfers extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  @ReferenceName('fromWallet')
+  IntColumn get fromWalletId => integer().references(Wallets, #id)();
+  @ReferenceName('toWallet')
+  IntColumn get toWalletId => integer().references(Wallets, #id)();
+  IntColumn get amountMinor =>
+      integer().check(amountMinor.isBiggerThanValue(0))();
+  DateTimeColumn get createdAt => dateTime()();
+  TextColumn get note => text().nullable()();
+}
+
 class RecurringRules extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get type => intEnum<TransactionType>()();
   IntColumn get amountMinor =>
       integer().check(amountMinor.isBiggerThanValue(0))();
   IntColumn get categoryId => integer().references(Categories, #id)();
+  IntColumn get walletId => integer().references(Wallets, #id)();
   TextColumn get title => text().nullable()();
   IntColumn get dayOfMonth =>
       integer().check(dayOfMonth.isBetweenValues(1, 31))();
@@ -43,6 +64,7 @@ class Transactions extends Table {
   IntColumn get amountMinor =>
       integer().check(amountMinor.isBiggerThanValue(0))();
   IntColumn get categoryId => integer().references(Categories, #id)();
+  IntColumn get walletId => integer().references(Wallets, #id)();
   TextColumn get title => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   IntColumn get recurringRuleId => integer().nullable().references(
@@ -67,20 +89,43 @@ class MonthlyLimits extends Table {
   Set<Column<Object>> get primaryKey => {yearMonth};
 }
 
+class AppSettings extends Table {
+  TextColumn get key => text().withLength(min: 1, max: 50)();
+  TextColumn get value => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
 @DriftDatabase(
-  tables: [Categories, RecurringRules, Transactions, MonthlyLimits],
+  tables: [Categories, Wallets, Transfers, RecurringRules, Transactions, MonthlyLimits, AppSettings],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
       await _seedDefaultCategories();
+      await _seedDefaultWallets();
+    },
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(wallets);
+        await _seedDefaultWallets();
+        await m.createTable(transfers);
+        await m.createTable(appSettings);
+        await m.alterTable(TableMigration(transactions,
+            newColumns: [transactions.walletId],
+            columnTransformer: {transactions.walletId: const CustomExpression('1')}));
+        await m.alterTable(TableMigration(recurringRules,
+            newColumns: [recurringRules.walletId],
+            columnTransformer: {recurringRules.walletId: const CustomExpression('1')}));
+      }
     },
     beforeOpen: (_) async => customStatement('PRAGMA foreign_keys = ON'),
   );
@@ -132,6 +177,29 @@ class AppDatabase extends _$AppDatabase {
                 type: category.type,
                 iconKey: category.iconKey,
                 isDefault: const Value(true),
+              ),
+            )
+            .toList(),
+      );
+    });
+  }
+
+  Future<void> _seedDefaultWallets() async {
+    const walletsToSeed = [
+      (name: 'On-Hand', iconKey: 'wallet', sortOrder: 0),
+      (name: 'Bank', iconKey: 'bank', sortOrder: 1),
+      (name: 'Mobile Wallet', iconKey: 'smartphone', sortOrder: 2),
+    ];
+
+    await batch((batch) {
+      batch.insertAll(
+        wallets,
+        walletsToSeed
+            .map(
+              (wallet) => WalletsCompanion.insert(
+                name: wallet.name,
+                iconKey: wallet.iconKey,
+                sortOrder: Value(wallet.sortOrder),
               ),
             )
             .toList(),

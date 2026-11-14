@@ -11,12 +11,15 @@ void main() {
   late CategoryDao categoryDao;
   late RecurringDao recurringDao;
   late TransactionDao transactionDao;
+  late int defaultWalletId;
 
-  setUp(() {
+  setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
     categoryDao = CategoryDao(database);
     recurringDao = RecurringDao(database);
     transactionDao = TransactionDao(database);
+    final wallets = await database.select(database.wallets).get();
+    defaultWalletId = wallets.first.id;
   });
 
   tearDown(() async {
@@ -31,6 +34,7 @@ void main() {
         type: TransactionType.expense,
         amountMinor: 12500,
         categoryId: category.id,
+        walletId: defaultWalletId,
         dayOfMonth: 31,
         startDate: DateTime(2026, 10, 31),
       ),

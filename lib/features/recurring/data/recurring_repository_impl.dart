@@ -32,6 +32,7 @@ class RecurringRepositoryImpl implements RecurringRepository {
                 endDate: row.rule.endDate,
                 lastGeneratedDue: row.rule.lastGeneratedDue,
                 isActive: row.rule.isActive,
+                walletId: row.rule.walletId,
               ),
             )
             .toList(),
@@ -44,6 +45,7 @@ class RecurringRepositoryImpl implements RecurringRepository {
           type: Value(_toDatabaseType(draft.kind)),
           amountMinor: Value(draft.amountMinor),
           categoryId: Value(draft.categoryId),
+          walletId: draft.walletId != null ? Value(draft.walletId!) : const Value.absent(),
           title: Value(draft.title),
           dayOfMonth: Value(draft.dayOfMonth),
           startDate: Value(draft.startDate),
@@ -56,6 +58,7 @@ class RecurringRepositoryImpl implements RecurringRepository {
               type: _toDatabaseType(draft.kind),
               amountMinor: draft.amountMinor,
               categoryId: draft.categoryId,
+              walletId: draft.walletId ?? 1,
               title: Value(draft.title),
               dayOfMonth: draft.dayOfMonth,
               startDate: draft.startDate,

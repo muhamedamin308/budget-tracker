@@ -28,6 +28,7 @@ void main() {
     endDate: null,
     lastGeneratedDue: null,
     isActive: true,
+    walletId: 1,
   );
   late MockWatchRules watchRules;
   late MockSaveRule saveRule;

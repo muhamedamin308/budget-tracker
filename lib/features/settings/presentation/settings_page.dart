@@ -2,152 +2,205 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_cubit.dart';
+import '../../../core/utils/money_format.dart';
 import '../../../core/widgets/entrance_animation.dart';
-import '../../categories/presentation/categories_bloc.dart';
+import '../../budget/presentation/budget_bloc.dart';
+import '../../budget/presentation/monthly_limit_dialog.dart';
+import '../../recurring/presentation/recurring_rules_page.dart';
 import 'categories_page.dart';
+import 'widget_settings_sheet.dart';
+
+abstract final class _S {
+  static const title = 'Settings';
+  static const money = 'Money';
+  static const appearance = 'Appearance';
+  static const homeScreen = 'Home screen';
+  static const wallets = 'Wallets';
+  static const walletsSubtitle = 'Balances, transfers and icons';
+  static const categories = 'Categories';
+  static const categoriesSubtitle = 'Tags for income and spending';
+  static const monthlyLimit = 'Monthly limit';
+  static const limitNotSet = 'Not set';
+  static const recurring = 'Recurring rules';
+  static const recurringSubtitle = 'Salary, subscriptions and other repeats';
+  static const widget = 'Widget';
+  static const widgetSubtitle = 'Balance and budget on your home screen';
+  static const footer = 'All your data is stored on this device.';
+}
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return BlocProvider(
-      create: (_) => getIt<CategoriesBloc>()..add(const CategoriesStarted()),
-      child: SafeArea(
-        child: Column(
-          children: [
-            EntranceAnimation(child: _StudioHeader(isDark: isDark)),
-            const Expanded(child: CategoriesPage()),
-          ],
-        ),
-      ),
-    );
+  void _openCategories(BuildContext context) {
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute<void>(builder: (_) => const CategoriesPage()));
   }
-}
-
-class _StudioHeader extends StatelessWidget {
-  const _StudioHeader({required this.isDark});
-
-  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(20, 12, 20, 6),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-      decoration: BoxDecoration(
-        gradient: isDark
-            ? AppTheme.darkCardGradient
-            : const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFE8F7F2), Color(0xFFF8FCFB)],
-              ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppTheme.primaryEmerald.withValues(
-            alpha: isDark ? 0.24 : 0.14,
-          ),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryEmerald.withValues(
-              alpha: isDark ? 0.18 : 0.06,
-            ),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: AppTheme.primaryGradient,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryEmerald.withValues(alpha: 0.32),
-                      blurRadius: 14,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.tune_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Preferences & Studio',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
-                        fontSize: 19,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Categories, limits & recurring rules',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 12.5,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          EntranceAnimation(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Text(_S.title, style: theme.textTheme.headlineMedium),
+            ),
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _FeaturePill(
-                icon: Icons.currency_exchange_rounded,
-                label: 'EGP Currency',
-                color: AppTheme.primaryEmerald,
-                isDark: isDark,
+          EntranceAnimation(
+            delay: const Duration(milliseconds: 40),
+            child: _SettingsGroup(
+              title: _S.appearance,
+              children: [
+                BlocBuilder<ThemeCubit, ThemeMode>(
+                  builder: (context, themeMode) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryEmerald.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.brightness_6_rounded,
+                              size: 20,
+                              color: AppTheme.primaryEmerald,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Theme Mode',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Switch between light, dark or auto',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SegmentedButton<ThemeMode>(
+                            segments: const [
+                              ButtonSegment(
+                                value: ThemeMode.system,
+                                icon: Icon(Icons.brightness_auto_rounded, size: 15),
+                                label: Text('Auto'),
+                              ),
+                              ButtonSegment(
+                                value: ThemeMode.light,
+                                icon: Icon(Icons.light_mode_rounded, size: 15),
+                                label: Text('Light'),
+                              ),
+                              ButtonSegment(
+                                value: ThemeMode.dark,
+                                icon: Icon(Icons.dark_mode_rounded, size: 15),
+                                label: Text('Dark'),
+                              ),
+                            ],
+                            selected: {themeMode},
+                            onSelectionChanged: (Set<ThemeMode> newSelection) {
+                              context.read<ThemeCubit>().setThemeMode(newSelection.first);
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          EntranceAnimation(
+            delay: const Duration(milliseconds: 80),
+            child: _SettingsGroup(
+              title: _S.money,
+              children: [
+                _SettingsTile(
+                  icon: Icons.account_balance_wallet_rounded,
+                  title: _S.wallets,
+                  subtitle: _S.walletsSubtitle,
+                  onTap: () => context.push('/wallets'),
+                ),
+                _SettingsTile(
+                  icon: Icons.category_rounded,
+                  title: _S.categories,
+                  subtitle: _S.categoriesSubtitle,
+                  onTap: () => _openCategories(context),
+                ),
+                BlocBuilder<BudgetBloc, BudgetState>(
+                  builder: (context, state) {
+                    final limit = state is BudgetLoaded
+                        ? state.status.limitMinor
+                        : null;
+                    return _SettingsTile(
+                      icon: Icons.speed_rounded,
+                      title: _S.monthlyLimit,
+                      subtitle: limit == null
+                          ? _S.limitNotSet
+                          : formatMinor(limit),
+                      onTap: () => showMonthlyLimitDialog(context),
+                    );
+                  },
+                ),
+                _SettingsTile(
+                  icon: Icons.event_repeat_rounded,
+                  title: _S.recurring,
+                  subtitle: _S.recurringSubtitle,
+                  onTap: () => showRecurringRules(context),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          EntranceAnimation(
+            delay: const Duration(milliseconds: 120),
+            child: _SettingsGroup(
+              title: _S.homeScreen,
+              children: [
+                _SettingsTile(
+                  icon: Icons.widgets_rounded,
+                  title: _S.widget,
+                  subtitle: _S.widgetSubtitle,
+                  onTap: () => showWidgetSettingsSheet(context),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+          Center(
+            child: Text(
+              _S.footer,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(width: 8),
-              _FeaturePill(
-                icon: Icons.offline_bolt_rounded,
-                label: 'Offline Safe',
-                color: AppTheme.infoBlue,
-                isDark: isDark,
-              ),
-              const SizedBox(width: 8),
-              _FeaturePill(
-                icon: Icons.shield_rounded,
-                label: 'Drift SQLite',
-                color: AppTheme.warningAmber,
-                isDark: isDark,
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -155,50 +208,117 @@ class _StudioHeader extends StatelessWidget {
   }
 }
 
-class _FeaturePill extends StatelessWidget {
-  const _FeaturePill({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.isDark,
-  });
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({required this.title, required this.children});
 
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool isDark;
+  final String title;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: isDark ? 0.14 : 0.07),
-          borderRadius: BorderRadius.circular(11),
-          border: Border.all(
-            color: color.withValues(alpha: isDark ? 0.24 : 0.14),
-            width: 1,
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final outline = theme.colorScheme.outlineVariant;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+          child: Text(
+            title,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
+        Material(
+          color: theme.cardColor,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: outline.withValues(alpha: isDark ? 0.3 : 0.5),
+            ),
+          ),
+          child: Column(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    height: 1,
+                    indent: 70,
+                    color: outline.withValues(alpha: 0.4),
+                  ),
+                children[i],
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
+  const _SettingsTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 13, color: color),
-            const SizedBox(width: 5),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.1,
-                  color: isDark ? Colors.white.withValues(alpha: 0.9) : color,
-                ),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryEmerald.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 20, color: AppTheme.primaryEmerald),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
+            Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
           ],
         ),
       ),

@@ -26,6 +26,7 @@ void main() {
     createdAt: DateTime(2026, 11, 12, 12),
     recurringRuleId: null,
     recurringDueDate: null,
+    walletId: 1,
   );
 
   late MockWatchMonthTransactions watchMonth;

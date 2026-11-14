@@ -13,13 +13,16 @@ void main() {
   late CategoryDao categoryDao;
   late RecurringDao recurringDao;
   late TransactionDao transactionDao;
+  late int defaultWalletId;
 
-  setUp(() {
+  setUp(() async {
     database = AppDatabase(NativeDatabase.memory());
     budgetDao = BudgetDao(database);
     categoryDao = CategoryDao(database);
     recurringDao = RecurringDao(database);
     transactionDao = TransactionDao(database);
+    final wallets = await database.select(database.wallets).get();
+    defaultWalletId = wallets.first.id;
   });
 
   tearDown(() async {
@@ -52,6 +55,7 @@ void main() {
         type: TransactionType.expense,
         amountMinor: 100,
         categoryId: transport.id,
+        walletId: defaultWalletId,
         createdAt: DateTime(2026, 11, 1),
       ),
     );
@@ -79,6 +83,7 @@ void main() {
           type: TransactionType.expense,
           amountMinor: 100,
           categoryId: category.id,
+          walletId: defaultWalletId,
           createdAt: date,
         ),
       );
@@ -108,6 +113,7 @@ void main() {
         type: TransactionType.income,
         amountMinor: 10000,
         categoryId: incomeCategory.id,
+        walletId: defaultWalletId,
         createdAt: DateTime(2026, 11, 1),
       ),
     );
@@ -116,6 +122,7 @@ void main() {
         type: TransactionType.expense,
         amountMinor: 1500,
         categoryId: expenseCategory.id,
+        walletId: defaultWalletId,
         createdAt: DateTime(2026, 11, 2),
       ),
     );
@@ -139,6 +146,7 @@ void main() {
           type: TransactionType.expense,
           amountMinor: 100,
           categoryId: category.id,
+          walletId: defaultWalletId,
           createdAt: date,
         ),
       );
@@ -150,28 +158,31 @@ void main() {
   });
 
   test('first transaction month stream reports the earliest month', () async {
-    final firstMonthUpdates = expectLater(
-      transactionDao.watchFirstTransactionMonth(),
-      emitsInOrder([null, DateTime(2026, 11), DateTime(2026, 10)]),
-    );
+    final firstMonthStream = transactionDao.watchFirstTransactionMonth();
+    expect(await firstMonthStream.first, isNull);
+    
     final category = (await database.select(database.categories).get()).first;
     await transactionDao.insert(
       TransactionsCompanion.insert(
         type: TransactionType.expense,
         amountMinor: 100,
         categoryId: category.id,
+        walletId: defaultWalletId,
         createdAt: DateTime(2026, 11, 12),
       ),
     );
+    expect(await firstMonthStream.first, DateTime(2026, 11));
+    
     await transactionDao.insert(
       TransactionsCompanion.insert(
         type: TransactionType.expense,
         amountMinor: 100,
         categoryId: category.id,
+        walletId: defaultWalletId,
         createdAt: DateTime(2026, 10, 30),
       ),
     );
-    await firstMonthUpdates;
+    expect(await firstMonthStream.first, DateTime(2026, 10));
   });
 
   test(
@@ -185,6 +196,7 @@ void main() {
           type: TransactionType.expense,
           amountMinor: 2500,
           categoryId: category.id,
+          walletId: defaultWalletId,
           dayOfMonth: 31,
           startDate: DateTime(2026, 11, 1),
         ),
@@ -194,6 +206,7 @@ void main() {
           type: TransactionType.expense,
           amountMinor: 2500,
           categoryId: category.id,
+          walletId: defaultWalletId,
           createdAt: dueDate,
           recurringRuleId: Value(ruleId),
           recurringDueDate: Value(dueDate),

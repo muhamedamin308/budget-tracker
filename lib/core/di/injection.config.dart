@@ -15,6 +15,7 @@ import 'package:budget_tracker/core/database/daos/category_dao.dart' as _i365;
 import 'package:budget_tracker/core/database/daos/recurring_dao.dart' as _i657;
 import 'package:budget_tracker/core/database/daos/transaction_dao.dart'
     as _i584;
+import 'package:budget_tracker/core/database/daos/wallet_dao.dart' as _i983;
 import 'package:budget_tracker/core/di/injection.dart' as _i263;
 import 'package:budget_tracker/core/router/app_router.dart' as _i729;
 import 'package:budget_tracker/core/services/widget_sync_service.dart' as _i645;
@@ -54,12 +55,20 @@ import 'package:budget_tracker/features/transactions/domain/transaction_reposito
     as _i123;
 import 'package:budget_tracker/features/transactions/domain/transaction_use_cases.dart'
     as _i403;
+import 'package:budget_tracker/features/transactions/presentation/balance_bloc.dart'
+    as _i873;
 import 'package:budget_tracker/features/transactions/presentation/transaction_form_cubit.dart'
     as _i563;
 import 'package:budget_tracker/features/transactions/presentation/transactions_bloc.dart'
     as _i680;
-import 'package:budget_tracker/features/transactions/presentation/wallet_bloc.dart'
-    as _i839;
+import 'package:budget_tracker/features/wallets/data/wallet_repository_impl.dart'
+    as _i328;
+import 'package:budget_tracker/features/wallets/domain/wallet_repository.dart'
+    as _i25;
+import 'package:budget_tracker/features/wallets/domain/wallet_use_cases.dart'
+    as _i486;
+import 'package:budget_tracker/features/wallets/presentation/wallet_cubit.dart'
+    as _i539;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 
@@ -85,11 +94,17 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i584.TransactionDao>(
       () => _i584.TransactionDao(gh<_i1070.AppDatabase>()),
     );
+    gh.lazySingleton<_i983.WalletDao>(
+      () => _i983.WalletDao(gh<_i1070.AppDatabase>()),
+    );
     gh.lazySingleton<_i93.RecurringRepository>(
       () => _i1043.RecurringRepositoryImpl(gh<_i657.RecurringDao>()),
     );
     gh.lazySingleton<_i226.BudgetRepository>(
       () => _i13.BudgetRepositoryImpl(gh<_i661.BudgetDao>()),
+    );
+    gh.lazySingleton<_i25.WalletRepository>(
+      () => _i328.WalletRepositoryImpl(gh<_i983.WalletDao>()),
     );
     gh.lazySingleton<_i123.TransactionRepository>(
       () => _i20.TransactionRepositoryImpl(
@@ -114,6 +129,42 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i31.GenerateDueRecurring>(
       () => _i31.GenerateDueRecurring(gh<_i93.RecurringRepository>()),
+    );
+    gh.factory<_i486.WatchWallets>(
+      () => _i486.WatchWallets(gh<_i25.WalletRepository>()),
+    );
+    gh.factory<_i486.WatchWalletBalance>(
+      () => _i486.WatchWalletBalance(gh<_i25.WalletRepository>()),
+    );
+    gh.factory<_i486.WatchTotalBalance>(
+      () => _i486.WatchTotalBalance(gh<_i25.WalletRepository>()),
+    );
+    gh.factory<_i486.AddWallet>(
+      () => _i486.AddWallet(gh<_i25.WalletRepository>()),
+    );
+    gh.factory<_i486.UpdateWallet>(
+      () => _i486.UpdateWallet(gh<_i25.WalletRepository>()),
+    );
+    gh.factory<_i486.ArchiveWallet>(
+      () => _i486.ArchiveWallet(gh<_i25.WalletRepository>()),
+    );
+    gh.factory<_i486.AddTransfer>(
+      () => _i486.AddTransfer(gh<_i25.WalletRepository>()),
+    );
+    gh.factory<_i486.DeleteTransfer>(
+      () => _i486.DeleteTransfer(gh<_i25.WalletRepository>()),
+    );
+    gh.factory<_i486.GetSelectedWalletId>(
+      () => _i486.GetSelectedWalletId(gh<_i25.WalletRepository>()),
+    );
+    gh.factory<_i486.SetSelectedWalletId>(
+      () => _i486.SetSelectedWalletId(gh<_i25.WalletRepository>()),
+    );
+    gh.factory<_i486.GetLastUsedWalletId>(
+      () => _i486.GetLastUsedWalletId(gh<_i25.WalletRepository>()),
+    );
+    gh.factory<_i486.SetLastUsedWalletId>(
+      () => _i486.SetLastUsedWalletId(gh<_i25.WalletRepository>()),
     );
     gh.factory<_i403.WatchBalance>(
       () => _i403.WatchBalance(gh<_i123.TransactionRepository>()),
@@ -171,8 +222,20 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i1004.WatchBudgetStatus>(),
       ),
     );
-    gh.factory<_i839.WalletBloc>(
-      () => _i839.WalletBloc(gh<_i403.WatchBalance>()),
+    gh.factory<_i873.BalanceBloc>(
+      () => _i873.BalanceBloc(gh<_i403.WatchBalance>()),
+    );
+    gh.factory<_i539.WalletCubit>(
+      () => _i539.WalletCubit(
+        gh<_i486.WatchWallets>(),
+        gh<_i486.WatchTotalBalance>(),
+        gh<_i486.AddWallet>(),
+        gh<_i486.UpdateWallet>(),
+        gh<_i486.ArchiveWallet>(),
+        gh<_i486.AddTransfer>(),
+        gh<_i486.GetSelectedWalletId>(),
+        gh<_i486.SetSelectedWalletId>(),
+      ),
     );
     gh.factory<_i680.TransactionsBloc>(
       () => _i680.TransactionsBloc(

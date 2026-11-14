@@ -44,6 +44,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
             type: _toDatabaseType(draft.kind),
             amountMinor: draft.amountMinor,
             categoryId: draft.categoryId,
+            walletId: draft.walletId ?? 1,
             title: Value(draft.title),
             createdAt: draft.createdAt ?? DateTime.now(),
           ),
@@ -67,6 +68,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
           type: Value(_toDatabaseType(draft.kind)),
           amountMinor: Value(draft.amountMinor),
           categoryId: Value(draft.categoryId),
+          walletId: draft.walletId != null ? Value(draft.walletId!) : const Value.absent(),
           title: Value(draft.title),
           createdAt: Value(draft.createdAt ?? existing.createdAt),
         ),
@@ -117,6 +119,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
         type: _toDatabaseType(transaction.kind),
         amountMinor: transaction.amountMinor,
         categoryId: transaction.categoryId,
+        walletId: transaction.walletId,
         title: Value(transaction.title),
         createdAt: transaction.createdAt,
         recurringRuleId: Value(transaction.recurringRuleId),
@@ -153,6 +156,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
         createdAt: row.createdAt,
         recurringRuleId: row.recurringRuleId,
         recurringDueDate: row.recurringDueDate,
+        walletId: row.walletId,
       );
 
   TransactionType _toDatabaseType(TransactionKind kind) => switch (kind) {

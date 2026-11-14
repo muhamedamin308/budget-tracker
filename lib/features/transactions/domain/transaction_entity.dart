@@ -14,6 +14,7 @@ class TransactionEntity extends Equatable {
     required this.createdAt,
     required this.recurringRuleId,
     required this.recurringDueDate,
+    required this.walletId,
   });
 
   final int id;
@@ -26,6 +27,7 @@ class TransactionEntity extends Equatable {
   final DateTime createdAt;
   final int? recurringRuleId;
   final DateTime? recurringDueDate;
+  final int walletId;
 
   @override
   List<Object?> get props => [
@@ -39,6 +41,7 @@ class TransactionEntity extends Equatable {
     createdAt,
     recurringRuleId,
     recurringDueDate,
+    walletId,
   ];
 }
 
@@ -49,6 +52,7 @@ class TransactionDraft {
     required this.categoryId,
     this.title,
     this.createdAt,
+    this.walletId,
   });
 
   final TransactionKind kind;
@@ -56,4 +60,5 @@ class TransactionDraft {
   final int categoryId;
   final String? title;
   final DateTime? createdAt;
+  final int? walletId;
 }
