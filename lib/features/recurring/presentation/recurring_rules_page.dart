@@ -6,8 +6,10 @@ import 'package:intl/intl.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_format.dart';
+import '../../../core/widgets/amount_hero_field.dart';
 import '../../../core/widgets/app_animations.dart';
 import '../../../core/widgets/entrance_animation.dart';
+import '../../../core/widgets/inline_error_banner.dart';
 import '../../categories/domain/category_entity.dart';
 import '../../categories/domain/category_repository.dart';
 import '../../transactions/domain/transaction_entity.dart';
@@ -19,10 +21,7 @@ Future<void> showRecurringRules(BuildContext context) =>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Theme.of(context).cardColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
+      // Background, shape and drag handle come from AppTheme.bottomSheetTheme.
       builder: (_) => FractionallySizedBox(
         heightFactor: 0.96,
         child: BlocProvider(
@@ -45,63 +44,46 @@ class RecurringRulesPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 12),
             Row(
               children: [
-                IconButton.filledTonal(
-                  tooltip: 'Back to settings',
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.arrow_back_rounded, size: 20),
-                ),
-                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Recurring Rules',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
-                        ),
+                        style: theme.textTheme.headlineSmall,
                       ),
+                      const SizedBox(height: 2),
                       Text(
                         'Automated monthly subscriptions & bills',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+                        style: theme.textTheme.bodySmall,
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 BlocBuilder<RecurringBloc, RecurringState>(
-                  builder: (context, state) => Container(
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.primaryGradient,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryEmerald.withValues(alpha: 0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                  builder: (context, state) => FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 42),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
                     ),
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        elevation: 0,
-                        minimumSize: const Size(0, 42),
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                      ),
-                      onPressed: state is RecurringLoaded
-                          ? () => _editRule(context)
-                          : null,
-                      icon: const Icon(Icons.add_rounded, size: 18),
-                      label: const Text('Add'),
-                    ),
+                    onPressed: state is RecurringLoaded
+                        ? () => _editRule(context)
+                        : null,
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('Add'),
                   ),
+                ),
+                const SizedBox(width: 6),
+                IconButton(
+                  tooltip: 'Close',
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: IconButton.styleFrom(
+                    backgroundColor: theme.inputDecorationTheme.fillColor,
+                  ),
+                  icon: const Icon(Icons.close_rounded, size: 20),
                 ),
               ],
             ),
@@ -137,11 +119,13 @@ class RecurringRulesPage extends StatelessWidget {
     BuildContext context, [
     RecurringRuleEntity? rule,
   ]) async {
-    await showDialog<void>(
+    await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
       builder: (_) => BlocProvider.value(
         value: context.read<RecurringBloc>(),
-        child: _RuleEditorDialog(rule: rule),
+        child: _RuleEditorSheet(rule: rule),
       ),
     );
   }
@@ -160,18 +144,26 @@ class _RulesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    if (rules.isEmpty) {
-      return Column(
-        children: [
-          if (errorMessage != null)
-            _ErrorBanner(
+    final retryBanner = errorMessage == null
+        ? null
+        : Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: InlineErrorBanner(
               message: errorMessage!,
+              retryTooltip: 'Retry recurring rules',
               onRetry: () => context.read<RecurringBloc>().add(
                 const RecurringRetryRequested(),
               ),
             ),
+          );
+
+    if (rules.isEmpty) {
+      return Column(
+        children: [
+          ?retryBanner,
           const Spacer(),
           PulsingBadge(
             duration: const Duration(milliseconds: 2000),
@@ -185,22 +177,20 @@ class _RulesList extends StatelessWidget {
               ),
               child: const Icon(
                 Icons.event_repeat_rounded,
-                size: 56,
+                size: 52,
                 color: AppTheme.primaryEmerald,
               ),
             ),
           ),
           const SizedBox(height: 18),
-          const Text(
-            'No recurring rules yet',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-          ),
+          Text('No recurring rules yet', style: theme.textTheme.titleLarge),
           const SizedBox(height: 8),
-          Text(
-            'Add rules to automatically record monthly subscriptions, bills, or salary.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              'Add rules to automatically record monthly subscriptions, bills, or salary.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
             ),
           ),
           const Spacer(),
@@ -208,15 +198,21 @@ class _RulesList extends StatelessWidget {
       );
     }
 
+    var incomeMinor = 0;
+    var expenseMinor = 0;
+    for (final rule in rules.where((r) => r.isActive)) {
+      if (rule.kind == TransactionKind.income) {
+        incomeMinor += rule.amountMinor;
+      } else {
+        expenseMinor += rule.amountMinor;
+      }
+    }
+
     return Column(
       children: [
-        if (errorMessage != null)
-          _ErrorBanner(
-            message: errorMessage!,
-            onRetry: () => context.read<RecurringBloc>().add(
-              const RecurringRetryRequested(),
-            ),
-          ),
+        ?retryBanner,
+        _Summary(incomeMinor: incomeMinor, expenseMinor: expenseMinor),
+        const SizedBox(height: 12),
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.only(bottom: 24),
@@ -224,146 +220,14 @@ class _RulesList extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final rule = rules[index];
-              final isIncome = rule.kind == TransactionKind.income;
-              final accentColor =
-                  isIncome ? AppTheme.incomeGreen : AppTheme.expenseCoral;
-
               return EntranceAnimation(
                 delay: Duration(milliseconds: index < 10 ? index * 30 : 300),
                 duration: const Duration(milliseconds: 320),
                 offset: const Offset(0, 0.03),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: accentColor.withValues(
-                              alpha: isDark ? 0.2 : 0.12,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: accentColor.withValues(
-                                alpha: isDark ? 0.35 : 0.2,
-                              ),
-                            ),
-                          ),
-                          child: Icon(
-                            isIncome
-                                ? Icons.arrow_downward_rounded
-                                : Icons.arrow_upward_rounded,
-                            color: accentColor,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => onEdit(rule),
-                            borderRadius: BorderRadius.circular(10),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  rule.title ?? rule.categoryName,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Text(
-                                      formatMinor(rule.amountMinor),
-                                      style: TextStyle(
-                                        color: accentColor,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    const Text('·'),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      rule.categoryName,
-                                      style: Theme.of(context).textTheme.bodySmall,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    const Text('·'),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Day ${rule.dayOfMonth}',
-                                      style: Theme.of(context).textTheme.bodySmall,
-                                    ),
-                                  ],
-                                ),
-                                if (rule.endDate != null) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Ends ${DateFormat.yMMMd().format(rule.endDate!)}',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey[500],
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                        Switch.adaptive(
-                          value: rule.isActive,
-                          activeTrackColor: AppTheme.primaryEmerald,
-                          onChanged: (isActive) => context
-                              .read<RecurringBloc>()
-                              .add(RuleToggled(id: rule.id, isActive: isActive)),
-                        ),
-                        PopupMenuButton<String>(
-                          tooltip: 'Rule options',
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          onSelected: (action) {
-                            if (action == 'edit') onEdit(rule);
-                            if (action == 'delete') _deleteRule(context, rule);
-                          },
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(
-                              value: 'edit',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.edit_outlined, size: 18),
-                                  SizedBox(width: 10),
-                                  Text('Edit'),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.delete_outline_rounded,
-                                    size: 18,
-                                    color: AppTheme.expenseCoral,
-                                  ),
-                                  SizedBox(width: 10),
-                                  Text(
-                                    'Delete',
-                                    style: TextStyle(color: AppTheme.expenseCoral),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                child: _RuleCard(
+                  rule: rule,
+                  onEdit: () => onEdit(rule),
+                  onDelete: () => _deleteRule(context, rule),
                 ),
               );
             },
@@ -387,7 +251,9 @@ class _RulesList extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.expenseCoral.withValues(alpha: isDark ? 0.2 : 0.12),
+                color: AppTheme.expenseCoral.withValues(
+                  alpha: isDark ? 0.2 : 0.12,
+                ),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
@@ -397,7 +263,7 @@ class _RulesList extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            const Text('Delete recurring rule?'),
+            const Flexible(child: Text('Delete recurring rule?')),
           ],
         ),
         content: Column(
@@ -412,18 +278,20 @@ class _RulesList extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.expenseCoral.withValues(alpha: isDark ? 0.15 : 0.1),
+                color: AppTheme.expenseCoral.withValues(
+                  alpha: isDark ? 0.16 : 0.1,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Row(
+              child: const Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.info_outline_rounded,
                     size: 16,
                     color: AppTheme.expenseCoral,
                   ),
-                  const SizedBox(width: 8),
-                  const Expanded(
+                  SizedBox(width: 8),
+                  Expanded(
                     child: Text(
                       'This action cannot be undone.',
                       style: TextStyle(
@@ -446,6 +314,7 @@ class _RulesList extends StatelessWidget {
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: AppTheme.expenseCoral,
+              minimumSize: const Size(0, 44),
             ),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Delete'),
@@ -459,16 +328,290 @@ class _RulesList extends StatelessWidget {
   }
 }
 
-class _RuleEditorDialog extends StatefulWidget {
-  const _RuleEditorDialog({this.rule});
+class _Summary extends StatelessWidget {
+  const _Summary({required this.incomeMinor, required this.expenseMinor});
+
+  final int incomeMinor;
+  final int expenseMinor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              Expanded(
+                child: _SummaryCell(
+                  label: 'Monthly income',
+                  amountMinor: incomeMinor,
+                  color: AppTheme.incomeGreen,
+                ),
+              ),
+              const VerticalDivider(width: 24),
+              Expanded(
+                child: _SummaryCell(
+                  label: 'Monthly expenses',
+                  amountMinor: expenseMinor,
+                  color: AppTheme.expenseCoral,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryCell extends StatelessWidget {
+  const _SummaryCell({
+    required this.label,
+    required this.amountMinor,
+    required this.color,
+  });
+
+  final String label;
+  final int amountMinor;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: theme.textTheme.bodySmall),
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            formatMinor(amountMinor),
+            style: theme.textTheme.titleLarge?.copyWith(color: color),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RuleCard extends StatelessWidget {
+  const _RuleCard({
+    required this.rule,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final RecurringRuleEntity rule;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isIncome = rule.kind == TransactionKind.income;
+    final accent = isIncome ? AppTheme.incomeGreen : AppTheme.expenseCoral;
+    final dim = rule.isActive ? 1.0 : 0.5;
+    final hasDistinctTitle =
+        rule.title != null && rule.title != rule.categoryName;
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onEdit,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 6, 6),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Opacity(
+                  opacity: dim,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: isDark ? 0.2 : 0.12),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                          isIncome
+                              ? Icons.arrow_downward_rounded
+                              : Icons.arrow_upward_rounded,
+                          color: accent,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              rule.title ?? rule.categoryName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontSize: 15,
+                              ),
+                            ),
+                            if (hasDistinctTitle)
+                              Text(
+                                rule.categoryName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontSize: 13,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${isIncome ? '+' : '−'}${formatMinor(rule.amountMinor)}',
+                        style: TextStyle(
+                          color: accent,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Opacity(
+                      opacity: dim,
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _MetaPill(
+                            icon: Icons.event_repeat_rounded,
+                            label: 'Day ${rule.dayOfMonth}',
+                          ),
+                          if (rule.endDate != null)
+                            _MetaPill(
+                              icon: Icons.flag_outlined,
+                              label:
+                                  'Ends ${DateFormat.yMMMd().format(rule.endDate!)}',
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: rule.isActive,
+                    activeTrackColor: AppTheme.primaryEmerald,
+                    onChanged: (isActive) => context.read<RecurringBloc>().add(
+                      RuleToggled(id: rule.id, isActive: isActive),
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    tooltip: 'Rule options',
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    onSelected: (action) {
+                      if (action == 'edit') onEdit();
+                      if (action == 'delete') onDelete();
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 18),
+                            SizedBox(width: 10),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.delete_outline_rounded,
+                              size: 18,
+                              color: AppTheme.expenseCoral,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              'Delete',
+                              style: TextStyle(color: AppTheme.expenseCoral),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MetaPill extends StatelessWidget {
+  const _MetaPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: theme.inputDecorationTheme.fillColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RuleEditorSheet extends StatefulWidget {
+  const _RuleEditorSheet({this.rule});
 
   final RecurringRuleEntity? rule;
 
   @override
-  State<_RuleEditorDialog> createState() => _RuleEditorDialogState();
+  State<_RuleEditorSheet> createState() => _RuleEditorSheetState();
 }
 
-class _RuleEditorDialogState extends State<_RuleEditorDialog> {
+class _RuleEditorSheetState extends State<_RuleEditorSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _amountController;
   late final TextEditingController _titleController;
@@ -507,7 +650,7 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
 
     return BlocListener<RecurringBloc, RecurringState>(
       listenWhen: (previous, current) =>
@@ -515,101 +658,259 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
           current is RecurringLoaded &&
           previous.saveRevision != current.saveRevision,
       listener: (context, state) => Navigator.of(context).pop(),
-      child: AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.event_repeat_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              widget.rule == null ? 'Add recurring rule' : 'Edit rule',
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
-            ),
-          ],
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
         ),
-        content: SizedBox(
-          width: 440,
-          child: FutureBuilder<List<CategoryEntity>>(
-            future: _categoriesFuture,
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(11),
                       decoration: BoxDecoration(
-                        color: AppTheme.expenseCoral.withValues(
-                          alpha: isDark ? 0.15 : 0.1,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppTheme.expenseCoral.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(
-                            Icons.error_outline_rounded,
-                            color: AppTheme.expenseCoral,
-                            size: 20,
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Could not load categories',
-                              style: TextStyle(
-                                color: AppTheme.expenseCoral,
-                                fontWeight: FontWeight.w600,
-                              ),
+                        gradient: AppTheme.primaryGradient,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryEmerald.withValues(
+                              alpha: 0.28,
                             ),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
+                      child: const Icon(
+                        Icons.event_repeat_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    TextButton.icon(
-                      onPressed: () =>
-                          setState(() => _categoriesFuture = _loadCategories()),
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Retry'),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        widget.rule == null
+                            ? 'Add recurring rule'
+                            : 'Edit rule',
+                        style: theme.textTheme.titleLarge,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Close',
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: IconButton.styleFrom(
+                        backgroundColor: theme.inputDecorationTheme.fillColor,
+                      ),
+                      icon: const Icon(Icons.close_rounded, size: 20),
                     ),
                   ],
-                );
-              }
-              if (!snapshot.hasData) {
-                return const SizedBox(
-                  height: 100,
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              final categories = snapshot.data!
-                  .where(
-                    (category) =>
-                        !category.isArchived &&
-                        category.type == _categoryType(_kind),
-                  )
-                  .toList();
-              return _buildForm(context, categories);
-            },
+                ),
+                const SizedBox(height: 20),
+                FutureBuilder<List<CategoryEntity>>(
+                  future: _categoriesFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return InlineErrorBanner(
+                        message: 'Could not load categories',
+                        retryTooltip: 'Retry',
+                        onRetry: () => setState(
+                          () => _categoriesFuture = _loadCategories(),
+                        ),
+                      );
+                    }
+                    if (!snapshot.hasData) {
+                      return const SizedBox(
+                        height: 100,
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    final categories = snapshot.data!
+                        .where(
+                          (category) =>
+                              !category.isArchived &&
+                              category.type == _categoryType(_kind),
+                        )
+                        .toList();
+                    return _buildForm(context, categories);
+                  },
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+      ),
+    );
+  }
+
+  Widget _buildForm(BuildContext context, List<CategoryEntity> categories) {
+    final theme = Theme.of(context);
+
+    return Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (widget.rule == null) ...[
+            SegmentedButton<TransactionKind>(
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment(
+                  value: TransactionKind.expense,
+                  label: Text('Expense'),
+                  icon: Icon(Icons.arrow_upward_rounded, size: 16),
+                ),
+                ButtonSegment(
+                  value: TransactionKind.income,
+                  label: Text('Income'),
+                  icon: Icon(Icons.arrow_downward_rounded, size: 16),
+                ),
+              ],
+              selected: {_kind},
+              onSelectionChanged: (selection) {
+                setState(() {
+                  _kind = selection.first;
+                  _categoryId = null;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+          AmountHeroField(
+            controller: _amountController,
+            caption: _kind == TransactionKind.income
+                ? 'INCOME · EGP / MONTH'
+                : 'EXPENSE · EGP / MONTH',
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+            ],
+            validator: _validateAmount,
           ),
+          if (_kind == TransactionKind.income) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: 'Title (e.g. Salary, Retainer)',
+                prefixIcon: Icon(Icons.title_rounded),
+              ),
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Income title is required.'
+                  : null,
+            ),
+          ],
+          const SizedBox(height: 12),
+          if (categories.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: AppTheme.warningAmber.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    size: 18,
+                    color: AppTheme.warningAmber,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Add an active category in Settings to continue.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          DropdownButtonFormField<int>(
+            key: ValueKey((_kind, _categoryId)),
+            isExpanded: true,
+            initialValue:
+                categories.any((category) => category.id == _categoryId)
+                ? _categoryId
+                : null,
+            decoration: const InputDecoration(
+              labelText: 'Category',
+              prefixIcon: Icon(Icons.category_outlined),
+            ),
+            items: [
+              for (final category in categories)
+                DropdownMenuItem(
+                  value: category.id,
+                  child: Text(category.name),
+                ),
+            ],
+            onChanged: (id) => setState(() => _categoryId = id),
+            validator: (id) => id == null ? 'Choose a category.' : null,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _dayController,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: const InputDecoration(
+              labelText: 'Day of month (1-31)',
+              prefixIcon: Icon(Icons.calendar_today_rounded),
+              helperText: 'Days 29–31 adjust to the month’s last day.',
+            ),
+            validator: (value) {
+              final day = int.tryParse(value ?? '');
+              return day == null || day < 1 || day > 31
+                  ? 'Enter a day from 1 to 31.'
+                  : null;
+            },
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _DateTile(
+                  label: 'Starts',
+                  date: _startDate,
+                  onTap: _pickStartDate,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _DateTile(
+                  label: 'Ends',
+                  date: _endDate,
+                  onTap: _pickEndDate,
+                  onClear: _endDate == null
+                      ? null
+                      : () => setState(() => _endDate = null),
+                ),
+              ),
+            ],
+          ),
+          BlocBuilder<RecurringBloc, RecurringState>(
+            builder: (context, state) {
+              final message = switch (state) {
+                RecurringLoaded(:final errorMessage) => errorMessage,
+                RecurringError(:final message) => message,
+                _ => null,
+              };
+              return message == null
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: InlineErrorBanner(message: message),
+                    );
+            },
+          ),
+          const SizedBox(height: 24),
           BlocBuilder<RecurringBloc, RecurringState>(
             builder: (context, state) {
               final isSaving = state is RecurringLoaded && state.isSaving;
@@ -617,173 +918,18 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
                 onPressed: isSaving ? null : _save,
                 child: isSaving
                     ? const SizedBox(
-                        width: 20,
-                        height: 20,
+                        width: 22,
+                        height: 22,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2,
+                          strokeWidth: 2.2,
                           color: Colors.white,
                         ),
                       )
-                    : const Text('Save Rule'),
+                    : const Text('Save rule'),
               );
             },
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildForm(BuildContext context, List<CategoryEntity> categories) {
-    return Form(
-      key: _formKey,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.rule == null) ...[
-              SegmentedButton<TransactionKind>(
-                segments: const [
-                  ButtonSegment(
-                    value: TransactionKind.expense,
-                    label: Text('Expense'),
-                    icon: Icon(Icons.arrow_upward_rounded, size: 16),
-                  ),
-                  ButtonSegment(
-                    value: TransactionKind.income,
-                    label: Text('Income'),
-                    icon: Icon(Icons.arrow_downward_rounded, size: 16),
-                  ),
-                ],
-                selected: {_kind},
-                onSelectionChanged: (selection) {
-                  setState(() {
-                    _kind = selection.first;
-                    _categoryId = null;
-                  });
-                },
-              ),
-              const SizedBox(height: 14),
-            ],
-            TextFormField(
-              controller: _amountController,
-              autofocus: true,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-              ],
-              decoration: const InputDecoration(
-                labelText: 'Amount',
-                suffixText: 'EGP',
-                prefixIcon: Icon(Icons.payments_outlined),
-              ),
-              validator: _validateAmount,
-            ),
-            if (_kind == TransactionKind.income) ...[
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title (e.g. Salary, Retainer)',
-                  prefixIcon: Icon(Icons.title_rounded),
-                ),
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Income title is required.'
-                    : null,
-              ),
-            ],
-            const SizedBox(height: 12),
-            if (categories.isEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: AppTheme.warningAmber.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'Add an active category in Settings to continue.',
-                  style: TextStyle(color: AppTheme.warningAmber, fontSize: 13),
-                ),
-              ),
-            DropdownButtonFormField<int>(
-              key: ValueKey((_kind, _categoryId)),
-              initialValue:
-                  categories.any((category) => category.id == _categoryId)
-                  ? _categoryId
-                  : null,
-              decoration: const InputDecoration(
-                labelText: 'Category',
-                prefixIcon: Icon(Icons.category_outlined),
-              ),
-              items: [
-                for (final category in categories)
-                  DropdownMenuItem(
-                    value: category.id,
-                    child: Text(category.name),
-                  ),
-              ],
-              onChanged: (id) => setState(() => _categoryId = id),
-              validator: (id) => id == null ? 'Choose a category.' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _dayController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                labelText: 'Day of month (1-31)',
-                prefixIcon: Icon(Icons.calendar_today_rounded),
-                helperText: 'Days 29–31 adjust to the month’s last day.',
-              ),
-              validator: (value) {
-                final day = int.tryParse(value ?? '');
-                return day == null || day < 1 || day > 31
-                    ? 'Enter a day from 1 to 31.'
-                    : null;
-              },
-            ),
-            const SizedBox(height: 12),
-            _DatePickerRow(
-              label: 'Starts',
-              date: _startDate,
-              onTap: _pickStartDate,
-            ),
-            const SizedBox(height: 6),
-            _DatePickerRow(
-              label: 'Ends',
-              date: _endDate,
-              onTap: _pickEndDate,
-              onClear: _endDate == null
-                  ? null
-                  : () => setState(() => _endDate = null),
-            ),
-            BlocBuilder<RecurringBloc, RecurringState>(
-              builder: (context, state) {
-                final message = switch (state) {
-                  RecurringLoaded(:final errorMessage) => errorMessage,
-                  RecurringError(:final message) => message,
-                  _ => null,
-                };
-                return message == null
-                    ? const SizedBox.shrink()
-                    : Padding(
-                        padding: const EdgeInsets.only(top: 10),
-                        child: Text(
-                          message,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      );
-              },
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -855,8 +1001,8 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
       getIt<CategoryRepository>().watchCategories().first;
 }
 
-class _DatePickerRow extends StatelessWidget {
-  const _DatePickerRow({
+class _DateTile extends StatelessWidget {
+  const _DateTile({
     required this.label,
     required this.date,
     required this.onTap,
@@ -870,39 +1016,52 @@ class _DatePickerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(14),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                child: Row(
+    final theme = Theme.of(context);
+
+    return Material(
+      color: theme.inputDecorationTheme.fillColor,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(14, 10, onClear == null ? 14 : 4, 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.calendar_today_outlined, size: 18),
-                    const SizedBox(width: 10),
                     Text(
-                      '$label: ${date == null ? 'Never' : DateFormat.yMMMd().format(date!)}',
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      label.toUpperCase(),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1,
+                        fontSize: 11,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      date == null ? 'Never' : DateFormat.yMMMd().format(date!),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
+              if (onClear != null)
+                IconButton(
+                  tooltip: 'Clear end date',
+                  onPressed: onClear,
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                ),
+            ],
           ),
-          if (onClear != null)
-            IconButton(
-              tooltip: 'Clear end date',
-              onPressed: onClear,
-              icon: const Icon(Icons.close_rounded, size: 18),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -919,53 +1078,22 @@ class _ErrorView extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.cloud_off_rounded, size: 48, color: Colors.grey),
-        const SizedBox(height: 12),
-        Text(message, textAlign: TextAlign.center),
-        const SizedBox(height: 16),
+        const Icon(
+          Icons.error_outline_rounded,
+          size: 48,
+          color: AppTheme.expenseCoral,
+        ),
+        const SizedBox(height: 14),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 18),
         FilledButton.tonalIcon(
           onPressed: onRetry,
           icon: const Icon(Icons.refresh_rounded),
           label: const Text('Retry'),
-        ),
-      ],
-    ),
-  );
-}
-
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    margin: const EdgeInsets.only(bottom: 12),
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-    decoration: BoxDecoration(
-      color: AppTheme.expenseCoral.withValues(alpha: 0.12),
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(
-        color: AppTheme.expenseCoral.withValues(alpha: 0.3),
-      ),
-    ),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            message,
-            style: const TextStyle(
-              color: AppTheme.expenseCoral,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        IconButton(
-          tooltip: 'Retry recurring rules',
-          onPressed: onRetry,
-          icon: const Icon(Icons.refresh_rounded, size: 20),
         ),
       ],
     ),

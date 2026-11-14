@@ -1,3 +1,5 @@
+// lib/features/categories/presentation/categories_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -28,6 +30,7 @@ class CategoriesPage extends StatelessWidget {
           const SizedBox(height: 8),
           EntranceAnimation(
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: Column(
@@ -38,26 +41,31 @@ class CategoriesPage extends StatelessWidget {
                         maxLines: 1,
                         softWrap: false,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
+                          letterSpacing: -0.5,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Text(
                         'Organize income & spending tags',
-                        style: theme.textTheme.bodySmall,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 12),
                 Container(
                   decoration: BoxDecoration(
                     gradient: AppTheme.primaryGradient,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryEmerald.withValues(alpha: 0.3),
+                        color: AppTheme.primaryEmerald.withValues(
+                          alpha: isDark ? 0.35 : 0.25,
+                        ),
                         blurRadius: 14,
                         offset: const Offset(0, 4),
                       ),
@@ -65,24 +73,33 @@ class CategoriesPage extends StatelessWidget {
                   ),
                   child: FilledButton.icon(
                     onPressed: () => _addCategory(context),
-                    icon: const Icon(Icons.add_rounded, size: 20),
+                    icon: const Icon(Icons.add_rounded, size: 19),
                     label: const Text('Add'),
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      minimumSize: const Size(0, 42),
+                      textStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.1,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           EntranceAnimation(
             delay: const Duration(milliseconds: 70),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 borderRadius: BorderRadius.circular(20),
@@ -109,13 +126,7 @@ class CategoriesPage extends StatelessWidget {
                       onTap: () => showMonthlyLimitDialog(context),
                     ),
                   ),
-                  Container(
-                    width: 1,
-                    height: 36,
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.08)
-                        : const Color(0xFFE2E8F0),
-                  ),
+                  _VerticalSeparator(isDark: isDark),
                   Expanded(
                     child: _SettingsAction(
                       icon: Icons.event_repeat_rounded,
@@ -124,13 +135,7 @@ class CategoriesPage extends StatelessWidget {
                       onTap: () => showRecurringRules(context),
                     ),
                   ),
-                  Container(
-                    width: 1,
-                    height: 36,
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.08)
-                        : const Color(0xFFE2E8F0),
-                  ),
+                  _VerticalSeparator(isDark: isDark),
                   Expanded(
                     child: _SettingsAction(
                       icon: Icons.widgets_rounded,
@@ -143,7 +148,7 @@ class CategoriesPage extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 6),
           Expanded(
             child: BlocBuilder<CategoriesBloc, CategoriesState>(
               builder: (context, state) => switch (state) {
@@ -195,45 +200,54 @@ class CategoriesPage extends StatelessWidget {
           final isDark = Theme.of(context).brightness == Brightness.dark;
 
           return Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryEmerald.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.widgets_rounded,
-                            color: AppTheme.primaryEmerald,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Home Screen Widget',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.primaryGradient,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryEmerald.withValues(
+                              alpha: isDark ? 0.35 : 0.25,
                             ),
-                            Text(
-                              'Android home screen companion',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ],
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.widgets_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Home Screen Widget',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.4,
+                                ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Android home screen companion',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
                     ),
                     IconButton(
                       tooltip: 'Close',
@@ -242,14 +256,27 @@ class CategoriesPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E293B),
+                    color: isDark
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFF1E293B),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFF334155)),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : const Color(0xFF334155),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,13 +290,16 @@ class CategoriesPage extends StatelessWidget {
                               color: Color(0xFF94A3B8),
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
+                              letterSpacing: 1.0,
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryEmerald,
+                              gradient: AppTheme.primaryGradient,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Text(
@@ -283,13 +313,14 @@ class CategoriesPage extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         syncService.isBalanceHidden ? '••••••' : 'Live Balance',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -303,7 +334,7 @@ class CategoriesPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text(
@@ -321,47 +352,69 @@ class CategoriesPage extends StatelessWidget {
                     setSheetState(() {});
                   },
                 ),
-                const Divider(),
-                const SizedBox(height: 10),
+                const Divider(height: 20),
                 if (isSupported)
-                  FilledButton.icon(
-                    onPressed: () async {
-                      final success = await syncService.requestPinWidget();
-                      if (context.mounted) {
-                        Navigator.pop(sheetContext);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              success
-                                  ? 'Widget pin prompt sent to home screen!'
-                                  : 'Could not pin widget.',
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () async {
+                        final success = await syncService.requestPinWidget();
+                        if (context.mounted) {
+                          Navigator.pop(sheetContext);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                success
+                                    ? 'Widget pin prompt sent to home screen!'
+                                    : 'Could not pin widget.',
+                              ),
                             ),
-                          ),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.add_to_home_screen_rounded),
-                    label: const Text('Add Widget to Home Screen'),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.add_to_home_screen_rounded),
+                      label: const Text('Add Widget to Home Screen'),
+                    ),
                   )
                 else
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      await syncService.syncNow();
-                      if (context.mounted) {
-                        Navigator.pop(sheetContext);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Widget refreshed!')),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.sync_rounded),
-                    label: const Text('Sync Widget Data Now'),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await syncService.syncNow();
+                        if (context.mounted) {
+                          Navigator.pop(sheetContext);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Widget refreshed!')),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.sync_rounded),
+                      label: const Text('Sync Widget Data Now'),
+                    ),
                   ),
               ],
             ),
           );
         },
       ),
+    );
+  }
+}
+
+class _VerticalSeparator extends StatelessWidget {
+  const _VerticalSeparator({required this.isDark});
+
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 56,
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.06)
+          : const Color(0xFFF1F5F9),
     );
   }
 }
@@ -387,13 +440,14 @@ class _SettingsAction extends StatelessWidget {
     return PressableScale(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
         color: Colors.transparent,
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 38,
-              height: 38,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -401,49 +455,47 @@ class _SettingsAction extends StatelessWidget {
                   colors: isDark
                       ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
                       : [
-                          AppTheme.primaryEmerald.withValues(alpha: 0.14),
-                          AppTheme.primaryEmerald.withValues(alpha: 0.05),
+                          AppTheme.primaryEmerald.withValues(alpha: 0.16),
+                          AppTheme.primaryEmerald.withValues(alpha: 0.04),
                         ],
                 ),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: AppTheme.primaryEmerald.withValues(
-                    alpha: isDark ? 0.3 : 0.18,
+                    alpha: isDark ? 0.32 : 0.18,
                   ),
                 ),
               ),
-              child: Icon(icon, color: AppTheme.primaryEmerald, size: 19),
+              child: Icon(icon, color: AppTheme.primaryEmerald, size: 21),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.2,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (subtitle != null)
-                    Text(
-                      subtitle!,
-                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                ],
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 12.5,
+                letterSpacing: -0.1,
+                color: theme.colorScheme.onSurface,
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 1),
+              Text(
+                subtitle!,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 10.5,
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.85,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -482,17 +534,17 @@ class _CategoriesContent extends StatelessWidget {
           child: categories.isEmpty
               ? _EmptyCategories(onAdd: () => _addCategory(context))
               : ListView(
-                  padding: const EdgeInsets.only(bottom: 24),
+                  padding: const EdgeInsets.only(top: 4, bottom: 24),
                   children: [
                     if (income.isNotEmpty)
                       _CategorySection(
-                        title: 'Income',
+                        title: 'INCOME',
                         categories: income,
                         accentColor: AppTheme.incomeGreen,
                       ),
                     if (expenses.isNotEmpty)
                       _CategorySection(
-                        title: 'Expenses',
+                        title: 'EXPENSES',
                         categories: expenses,
                         accentColor: AppTheme.expenseCoral,
                       ),
@@ -535,12 +587,12 @@ class _CategorySection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
+          padding: const EdgeInsets.fromLTRB(2, 16, 2, 10),
           child: Row(
             children: [
               Container(
-                width: 4,
-                height: 16,
+                width: 3,
+                height: 12,
                 decoration: BoxDecoration(
                   color: accentColor,
                   borderRadius: BorderRadius.circular(2),
@@ -549,24 +601,28 @@ class _CategorySection extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0,
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.85,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: accentColor.withValues(alpha: isDark ? 0.2 : 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '${categories.length}',
                   style: TextStyle(
                     color: accentColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
@@ -581,6 +637,7 @@ class _CategorySection extends StatelessWidget {
             itemCount: categories.length,
             separatorBuilder: (_, __) => Divider(
               height: 1,
+              thickness: 1,
               color: isDark
                   ? Colors.white.withValues(alpha: 0.05)
                   : const Color(0xFFF1F5F9),
@@ -671,12 +728,19 @@ class _CategoryTile extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       leading: Container(
-        width: 44,
-        height: 44,
+        width: 46,
+        height: 46,
         decoration: BoxDecoration(
-          color: accentColor.withValues(alpha: isDark ? 0.2 : 0.12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              accentColor.withValues(alpha: isDark ? 0.28 : 0.16),
+              accentColor.withValues(alpha: isDark ? 0.14 : 0.06),
+            ],
+          ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: accentColor.withValues(alpha: isDark ? 0.35 : 0.2),
@@ -686,7 +750,7 @@ class _CategoryTile extends StatelessWidget {
         child: Icon(
           CategoryIcons.getIcon(category.iconKey),
           color: accentColor,
-          size: 20,
+          size: 22,
         ),
       ),
       title: Text(
@@ -694,6 +758,7 @@ class _CategoryTile extends StatelessWidget {
         style: const TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 15,
+          letterSpacing: -0.1,
         ),
       ),
       subtitle: Text(
@@ -707,11 +772,10 @@ class _CategoryTile extends StatelessWidget {
       ),
       trailing: PopupMenuButton<String>(
         tooltip: 'Category actions',
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         icon: Icon(
           Icons.more_vert_rounded,
+          size: 20,
           color: theme.colorScheme.onSurfaceVariant,
         ),
         onSelected: (action) {
@@ -756,48 +820,74 @@ class _EmptyCategories extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(26),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryEmerald.withValues(
-                alpha: isDark ? 0.15 : 0.08,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.primaryEmerald.withValues(
+                      alpha: isDark ? 0.2 : 0.12,
+                    ),
+                    AppTheme.primaryEmerald.withValues(
+                      alpha: isDark ? 0.06 : 0.03,
+                    ),
+                  ],
+                ),
+                border: Border.all(
+                  color: AppTheme.primaryEmerald.withValues(
+                    alpha: isDark ? 0.2 : 0.1,
+                  ),
+                ),
               ),
-              shape: BoxShape.circle,
+              child: const Icon(
+                Icons.category_outlined,
+                size: 48,
+                color: AppTheme.primaryEmerald,
+              ),
             ),
-            child: const Icon(
-              Icons.category_outlined,
-              size: 56,
-              color: AppTheme.primaryEmerald,
+            const SizedBox(height: 24),
+            Text(
+              'No categories yet',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'No categories yet',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'Create categories to organize your transactions.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Create categories to organize your transactions.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add_rounded, size: 20),
+              label: const Text('Add category'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 14,
+                ),
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          OutlinedButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Add category'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -815,43 +905,49 @@ class _ErrorView extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : const Color(0xFFE2E8F0),
+      child: Container(
+        padding: const EdgeInsets.all(22),
+        margin: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.08)
+                : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.error.withValues(
+                  alpha: isDark ? 0.15 : 0.1,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                size: 32,
+                color: theme.colorScheme.error,
               ),
             ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.error_outline_rounded,
-                  size: 48,
-                  color: theme.colorScheme.error,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 20),
-                OutlinedButton.icon(
-                  onPressed: onRetry,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Retry'),
-                ),
-              ],
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -868,7 +964,7 @@ class _ErrorBanner extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(top: 4, bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: colors.errorContainer,
@@ -876,18 +972,26 @@ class _ErrorBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
+          Icon(
+            Icons.error_outline_rounded,
+            size: 18,
+            color: colors.onErrorContainer,
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
               style: TextStyle(
                 color: colors.onErrorContainer,
                 fontWeight: FontWeight.w500,
+                fontSize: 13,
               ),
             ),
           ),
           IconButton(
             tooltip: 'Dismiss error',
             onPressed: onDismiss,
+            iconSize: 18,
             icon: const Icon(Icons.close_rounded),
           ),
         ],
@@ -946,6 +1050,8 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      titlePadding: const EdgeInsets.fromLTRB(22, 22, 22, 12),
+      contentPadding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
       title: Row(
         children: [
           Container(
@@ -953,6 +1059,13 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
             decoration: BoxDecoration(
               gradient: AppTheme.primaryGradient,
               borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryEmerald.withValues(alpha: 0.28),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: const Icon(
               Icons.category_rounded,
@@ -961,9 +1074,15 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
             ),
           ),
           const SizedBox(width: 12),
-          Text(
-            widget.category == null ? 'Add category' : 'Rename category',
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+          Expanded(
+            child: Text(
+              widget.category == null ? 'Add category' : 'Rename category',
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                letterSpacing: -0.3,
+              ),
+            ),
           ),
         ],
       ),
@@ -991,30 +1110,38 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Choose Icon',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+                      'CHOOSE ICON',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.0,
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.75,
+                        ),
                       ),
                     ),
                     Text(
                       _selectedIconKey,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppTheme.primaryEmerald,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  height: 180,
+                  height: 190,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF152033) : const Color(0xFFF8FAFC),
+                    color: isDark
+                        ? const Color(0xFF152033)
+                        : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isDark
@@ -1024,12 +1151,13 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
                   ),
                   child: GridView.builder(
                     padding: const EdgeInsets.all(10),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 5,
-                      childAspectRatio: 1,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 5,
+                          childAspectRatio: 1,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                        ),
                     itemCount: CategoryIcons.availableIconKeys.length,
                     itemBuilder: (context, index) {
                       final iconKey = CategoryIcons.availableIconKeys[index];
@@ -1038,12 +1166,12 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
                         onTap: () => setState(() => _selectedIconKey = iconKey),
                         borderRadius: BorderRadius.circular(12),
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeOutCubic,
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOut,
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? AppTheme.primaryEmerald.withValues(
-                                    alpha: isDark ? 0.3 : 0.18,
+                                    alpha: isDark ? 0.28 : 0.16,
                                   )
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(12),
@@ -1053,7 +1181,7 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
                                   : isDark
                                   ? Colors.white.withValues(alpha: 0.08)
                                   : const Color(0xFFE2E8F0),
-                              width: isSelected ? 2 : 1,
+                              width: isSelected ? 1.5 : 1,
                             ),
                           ),
                           child: Icon(
@@ -1113,6 +1241,7 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
           ),
         ),
       ),
+      actionsPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),

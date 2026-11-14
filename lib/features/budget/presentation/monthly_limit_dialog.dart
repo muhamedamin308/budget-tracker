@@ -11,10 +11,7 @@ Future<void> showMonthlyLimitDialog(BuildContext context) =>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Theme.of(context).cardColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
+      // Background, shape and drag handle come from AppTheme.bottomSheetTheme.
       builder: (_) => const _MonthlyLimitSheet(),
     );
 
@@ -26,6 +23,8 @@ class _MonthlyLimitSheet extends StatefulWidget {
 }
 
 class _MonthlyLimitSheetState extends State<_MonthlyLimitSheet> {
+  static const _presets = [1000, 3000, 5000, 10000];
+
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   bool _initialized = false;
@@ -53,7 +52,7 @@ class _MonthlyLimitSheetState extends State<_MonthlyLimitSheet> {
         ),
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
             child: BlocBuilder<BudgetBloc, BudgetState>(
               builder: (context, state) {
                 final month = switch (state) {
@@ -74,116 +73,22 @@ class _MonthlyLimitSheetState extends State<_MonthlyLimitSheet> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                gradient: AppTheme.primaryGradient,
-                                borderRadius: BorderRadius.circular(14),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppTheme.primaryEmerald.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.account_balance_wallet_rounded,
-                                color: Colors.white,
-                                size: 22,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Monthly Limit',
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: -0.4,
-                                  ),
-                                ),
-                                Text(
-                                  DateFormat.yMMMM().format(month),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        IconButton(
-                          tooltip: 'Close',
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close_rounded),
-                        ),
-                      ],
-                    ),
+                    _Header(month: month),
                     const SizedBox(height: 20),
                     switch (state) {
                       BudgetLoading() => const SizedBox(
-                          height: 100,
-                          child: Center(child: CircularProgressIndicator()),
+                        height: 100,
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      BudgetError(:final message, :final month) => _ErrorPanel(
+                        message: message,
+                        isDark: isDark,
+                        retryLabel:
+                            'Retry for ${DateFormat.yMMMM().format(month)}',
+                        onRetry: () => context.read<BudgetBloc>().add(
+                          const BudgetRetryRequested(),
                         ),
-                      BudgetError(:final message, :final month) => Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: AppTheme.expenseCoral.withValues(
-                              alpha: isDark ? 0.15 : 0.1,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: AppTheme.expenseCoral.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.error_outline_rounded,
-                                    color: AppTheme.expenseCoral,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      message,
-                                      style: const TextStyle(
-                                        color: AppTheme.expenseCoral,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 14),
-                              FilledButton.tonal(
-                                onPressed: () => context.read<BudgetBloc>().add(
-                                  const BudgetRetryRequested(),
-                                ),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: AppTheme.expenseCoral.withValues(
-                                    alpha: 0.15,
-                                  ),
-                                ),
-                                child: Text('Retry for ${DateFormat.yMMMM().format(month)}'),
-                              ),
-                            ],
-                          ),
-                        ),
+                      ),
                       BudgetLoaded(
                         :final status,
                         :final isSaving,
@@ -192,191 +97,61 @@ class _MonthlyLimitSheetState extends State<_MonthlyLimitSheet> {
                         Form(
                           key: _formKey,
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? const Color(0xFF1E293B)
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(
-                                    color: isDark
-                                        ? Colors.white.withValues(alpha: 0.08)
-                                        : const Color(0xFFE2E8F0),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: isDark ? 0.2 : 0.03,
-                                      ),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      status.limitMinor == null
-                                          ? Icons.info_outline_rounded
-                                          : Icons.check_circle_rounded,
-                                      size: 20,
-                                      color: status.limitMinor == null
-                                          ? AppTheme.infoBlue
-                                          : AppTheme.incomeGreen,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        status.limitMinor == null
-                                            ? 'No spending limit set for this month yet.'
-                                            : 'Current limit: ${formatMinor(status.limitMinor!)}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 13.5,
+                              _StatusPill(limitMinor: status.limitMinor),
+                              const SizedBox(height: 16),
+                              _AmountField(controller: _amountController),
+                              const SizedBox(height: 16),
+                              ValueListenableBuilder<TextEditingValue>(
+                                valueListenable: _amountController,
+                                builder: (context, value, _) {
+                                  final current = double.tryParse(
+                                    value.text.trim(),
+                                  );
+                                  return Wrap(
+                                    alignment: WrapAlignment.center,
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      for (final preset in _presets)
+                                        ChoiceChip(
+                                          showCheckmark: false,
+                                          selected: current == preset,
+                                          label: Text(
+                                            NumberFormat.decimalPattern()
+                                                .format(preset),
+                                          ),
+                                          onSelected: (_) {
+                                            _amountController.text = '$preset';
+                                          },
                                         ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              TextFormField(
-                                key: const ValueKey('monthly-limit-amount'),
-                                controller: _amountController,
-                                autofocus: true,
-                                keyboardType: const TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.5,
-                                ),
-                                decoration: const InputDecoration(
-                                  labelText: 'Monthly Limit Amount',
-                                  hintText: '0.00',
-                                  prefixIcon: Icon(
-                                    Icons.payments_outlined,
-                                    size: 22,
-                                  ),
-                                  suffixText: 'EGP',
-                                  suffixStyle: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                validator: (value) {
-                                  final amount = double.tryParse(value?.trim() ?? '');
-                                  if (amount == null ||
-                                      !amount.isFinite ||
-                                      amount <= 0 ||
-                                      (amount * 100).round() <= 0) {
-                                    return 'Enter an amount greater than zero.';
-                                  }
-                                  return null;
+                                    ],
+                                  );
                                 },
                               ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  for (final preset in [1000, 3000, 5000, 10000])
-                                    ActionChip(
-                                      label: Text('$preset EGP'),
-                                      onPressed: () {
-                                        setState(() {
-                                          _amountController.text = '$preset';
-                                        });
-                                      },
-                                      backgroundColor: isDark
-                                          ? const Color(0xFF1E293B)
-                                          : const Color(0xFFF1F5F9),
-                                      side: BorderSide(
-                                        color: isDark
-                                            ? Colors.white.withValues(alpha: 0.1)
-                                            : const Color(0xFFE2E8F0),
-                                      ),
-                                      labelStyle: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                ],
-                              ),
                               if (errorMessage != null) ...[
-                                const SizedBox(height: 14),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.expenseCoral.withValues(
-                                      alpha: isDark ? 0.15 : 0.1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: AppTheme.expenseCoral.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.error_outline_rounded,
-                                        color: AppTheme.expenseCoral,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Text(
-                                          errorMessage,
-                                          style: const TextStyle(
-                                            color: AppTheme.expenseCoral,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                const SizedBox(height: 16),
+                                _InlineError(
+                                  message: errorMessage,
+                                  isDark: isDark,
                                 ),
                               ],
                               const SizedBox(height: 24),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 54,
-                                child: FilledButton(
-                                  onPressed: isSaving ? null : () => _save(context),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: AppTheme.primaryEmerald,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                  ),
-                                  child: isSaving
-                                      ? const SizedBox(
-                                          width: 22,
-                                          height: 22,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : const Text(
-                                          'Save',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 16,
-                                          ),
+                              FilledButton(
+                                onPressed: isSaving
+                                    ? null
+                                    : () => _save(context),
+                                child: isSaving
+                                    ? const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.2,
+                                          color: Colors.white,
                                         ),
-                                ),
+                                      )
+                                    : const Text('Save limit'),
                               ),
                             ],
                           ),
@@ -397,5 +172,274 @@ class _MonthlyLimitSheetState extends State<_MonthlyLimitSheet> {
     final amount = double.parse(_amountController.text.trim());
     final amountMinor = (amount * 100).round();
     context.read<BudgetBloc>().add(BudgetLimitSaveRequested(amountMinor));
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.month});
+
+  final DateTime month;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(11),
+          decoration: BoxDecoration(
+            gradient: AppTheme.primaryGradient,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryEmerald.withValues(alpha: 0.28),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.account_balance_wallet_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Monthly Limit', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 2),
+              Text(
+                DateFormat.yMMMM().format(month),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          tooltip: 'Close',
+          onPressed: () => Navigator.pop(context),
+          style: IconButton.styleFrom(
+            backgroundColor: theme.inputDecorationTheme.fillColor,
+          ),
+          icon: const Icon(Icons.close_rounded, size: 20),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.limitMinor});
+
+  final int? limitMinor;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasLimit = limitMinor != null;
+    final color = hasLimit ? AppTheme.incomeGreen : AppTheme.infoBlue;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              hasLimit
+                  ? Icons.check_circle_rounded
+                  : Icons.info_outline_rounded,
+              size: 16,
+              color: color,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                hasLimit
+                    ? 'Current limit: ${formatMinor(limitMinor!)}'
+                    : 'No spending limit set for this month yet.',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AmountField extends StatelessWidget {
+  const _AmountField({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      decoration: BoxDecoration(
+        color: theme.inputDecorationTheme.fillColor,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'MONTHLY LIMIT · EGP',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
+          ),
+          TextFormField(
+            key: const ValueKey('monthly-limit-amount'),
+            controller: controller,
+            autofocus: true,
+            textAlign: TextAlign.center,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: theme.textTheme.headlineLarge?.copyWith(fontSize: 40),
+            cursorColor: AppTheme.primaryEmerald,
+            decoration: InputDecoration(
+              hintText: '0.00',
+              hintStyle: theme.textTheme.headlineLarge?.copyWith(
+                fontSize: 40,
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.35,
+                ),
+              ),
+              filled: false,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              focusedErrorBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+            ),
+            validator: (value) {
+              final amount = double.tryParse(value?.trim() ?? '');
+              if (amount == null ||
+                  !amount.isFinite ||
+                  amount <= 0 ||
+                  (amount * 100).round() <= 0) {
+                return 'Enter an amount greater than zero.';
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineError extends StatelessWidget {
+  const _InlineError({required this.message, required this.isDark});
+
+  final String message;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.expenseCoral.withValues(alpha: isDark ? 0.16 : 0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: AppTheme.expenseCoral,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: AppTheme.expenseCoral,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorPanel extends StatelessWidget {
+  const _ErrorPanel({
+    required this.message,
+    required this.isDark,
+    required this.retryLabel,
+    required this.onRetry,
+  });
+
+  final String message;
+  final bool isDark;
+  final String retryLabel;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.expenseCoral.withValues(alpha: isDark ? 0.16 : 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: AppTheme.expenseCoral,
+                size: 24,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    color: AppTheme.expenseCoral,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          FilledButton.tonal(
+            onPressed: onRetry,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.expenseCoral.withValues(alpha: 0.15),
+              foregroundColor: AppTheme.expenseCoral,
+            ),
+            child: Text(retryLabel),
+          ),
+        ],
+      ),
+    );
   }
 }

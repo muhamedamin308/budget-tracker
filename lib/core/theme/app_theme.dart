@@ -47,6 +47,12 @@ abstract final class AppTheme {
     surfaceVariant: const Color(0xFF334155),
   );
 
+  static const LinearGradient balanceGradientDark = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF0C2B24), Color(0xFF061814)],
+  );
+
   static ThemeData _buildTheme({
     required Brightness brightness,
     required Color scaffoldBg,

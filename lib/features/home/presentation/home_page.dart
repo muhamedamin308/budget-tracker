@@ -9,6 +9,7 @@ import '../../../core/utils/category_icons.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../core/widgets/app_animations.dart';
 import '../../../core/widgets/entrance_animation.dart';
+import '../../../core/widgets/inline_error_banner.dart';
 import '../../budget/domain/budget_status.dart';
 import '../../budget/presentation/budget_bloc.dart';
 import '../../shell/presentation/month_cubit.dart';
@@ -43,120 +44,82 @@ class _HomePageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return BlocListener<MonthCubit, DateTime>(
       listener: (context, month) =>
           context.read<TransactionsBloc>().add(MonthChanged(month)),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Home',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.6,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryEmerald.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppTheme.primaryEmerald.withValues(alpha: 0.25),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: AppTheme.primaryEmerald,
-                            shape: BoxShape.circle,
-                          ),
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _Header(),
+                    const SizedBox(height: 16),
+                    EntranceAnimation(
+                      child: _BalanceSection(
+                        onRetry: () => context.read<WalletBloc>().add(
+                          const WalletRetryRequested(),
                         ),
-                        const SizedBox(width: 5),
-                        const Text(
-                          'EGP Active',
-                          style: TextStyle(
-                            color: AppTheme.primaryEmerald,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    EntranceAnimation(
+                      delay: const Duration(milliseconds: 60),
+                      child: _TransactionActions(
+                        onAdd: (kind) => _openForm(context, kind),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const EntranceAnimation(
+                      delay: Duration(milliseconds: 100),
+                      child: _BudgetSection(),
+                    ),
+                    const SizedBox(height: 20),
+                    EntranceAnimation(
+                      delay: const Duration(milliseconds: 140),
+                      child: BlocBuilder<MonthCubit, DateTime>(
+                        builder: (context, month) =>
+                            _MonthSelector(month: month),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                ),
+              ),
+            ),
+            BlocBuilder<TransactionsBloc, TransactionsState>(
+              builder: (context, state) => switch (state) {
+                TransactionsLoading() => const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                TransactionsError(:final message) => SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _RetryView(
+                    message: message,
+                    onRetry: () => context.read<TransactionsBloc>().add(
+                      const TransactionsRetryRequested(),
+                    ),
+                  ),
+                ),
+                TransactionsLoaded(:final transactions, :final errorMessage) =>
+                  transactions.isEmpty
+                      ? SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: _EmptyState(errorMessage: errorMessage),
+                        )
+                      : _TransactionsSliver(
+                          transactions: transactions,
+                          errorMessage: errorMessage,
+                          onEdit: (transaction) =>
+                              _openForm(context, transaction.kind, transaction),
                         ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              EntranceAnimation(
-                child: _BalanceSection(
-                  onRetry: () => context.read<WalletBloc>().add(
-                    const WalletRetryRequested(),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const EntranceAnimation(
-                delay: Duration(milliseconds: 60),
-                child: _BudgetSection(),
-              ),
-              const SizedBox(height: 8),
-              EntranceAnimation(
-                delay: const Duration(milliseconds: 100),
-                child: BlocBuilder<MonthCubit, DateTime>(
-                  builder: (context, month) => _MonthSelector(month: month),
-                ),
-              ),
-              const SizedBox(height: 8),
-              EntranceAnimation(
-                delay: const Duration(milliseconds: 140),
-                child: _TransactionActions(
-                  onAdd: (kind) => _openForm(context, kind),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: BlocBuilder<TransactionsBloc, TransactionsState>(
-                  builder: (context, state) => switch (state) {
-                    TransactionsLoading() => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    TransactionsError(:final message) => _RetryView(
-                      message: message,
-                      onRetry: () => context.read<TransactionsBloc>().add(
-                        const TransactionsRetryRequested(),
-                      ),
-                    ),
-                    TransactionsLoaded(
-                      :final transactions,
-                      :final errorMessage,
-                    ) =>
-                      _TransactionsList(
-                        transactions: transactions,
-                        errorMessage: errorMessage,
-                        onEdit: (transaction) =>
-                            _openForm(context, transaction.kind, transaction),
-                      ),
-                  },
-                ),
-              ),
-            ],
-          ),
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -169,6 +132,50 @@ class _HomePageView extends StatelessWidget {
   ]) => showTransactionForm(context, kind: kind, transaction: transaction);
 }
 
+class _Header extends StatelessWidget {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text('Home', style: theme.textTheme.headlineMedium),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryEmerald.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryEmerald,
+                  shape: BoxShape.circle,
+                ),
+                child: SizedBox(width: 6, height: 6),
+              ),
+              SizedBox(width: 6),
+              Text(
+                'EGP Active',
+                style: TextStyle(
+                  color: AppTheme.primaryEmerald,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _BalanceSection extends StatelessWidget {
   const _BalanceSection({required this.onRetry});
 
@@ -176,236 +183,336 @@ class _BalanceSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return BlocBuilder<WalletBloc, WalletState>(
       builder: (context, state) {
         final balanceMinor = state is WalletLoaded ? state.balanceMinor : 0;
         final isNegative = state is WalletLoaded && state.isNegative;
 
-        return Container(
+        final gradient = isNegative
+            ? AppTheme.expenseGradient
+            : isDark
+            ? AppTheme.balanceGradientDark
+            : AppTheme.primaryGradient;
+        final glow = isNegative
+            ? AppTheme.expenseCoral
+            : AppTheme.primaryEmerald;
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            gradient: isDark
-                ? const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF0C2B24), Color(0xFF061814)],
-                  )
-                : const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF0D9373), Color(0xFF045D48)],
-                  ),
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.25),
-              width: 1.2,
-            ),
+            gradient: gradient,
+            borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
                 color: isDark
-                    ? Colors.black.withValues(alpha: 0.5)
-                    : const Color(0xFF0D9373).withValues(alpha: 0.35),
+                    ? Colors.black.withValues(alpha: 0.45)
+                    : glow.withValues(alpha: 0.3),
                 blurRadius: 24,
                 offset: const Offset(0, 10),
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25),
+              Positioned(
+                right: -36,
+                top: -44,
+                child: _Orb(size: 150, alpha: isDark ? 0.05 : 0.09),
+              ),
+              Positioned(
+                right: 40,
+                bottom: -56,
+                child: _Orb(size: 110, alpha: isDark ? 0.04 : 0.07),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total balance',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.85),
+                            letterSpacing: 0.2,
                           ),
                         ),
-                        child: Icon(
-                          Icons.account_balance_wallet_rounded,
-                          size: 19,
-                          color: Colors.white.withValues(alpha: 0.95),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Your balance',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.9),
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (isNegative)
-                    PulsingBadge(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.expenseCoral,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.expenseCoral.withValues(alpha: 0.4),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                        if (isNegative)
+                          PulsingBadge(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.22),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.warning_rounded,
+                                    size: 13,
+                                    color: Colors.white,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Overdrawn',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    if (state is WalletLoading)
+                      const SizedBox(
+                        height: 44,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: SizedBox(
+                            width: 26,
+                            height: 26,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          ),
                         ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
+                      )
+                    else if (state is WalletError)
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
                           children: [
                             Icon(
-                              Icons.warning_rounded,
-                              size: 13,
-                              color: Colors.white,
+                              Icons.error_outline_rounded,
+                              color: Colors.white.withValues(alpha: 0.9),
+                              size: 20,
                             ),
-                            SizedBox(width: 4),
-                            Text(
-                              'Overdrawn',
-                              style: TextStyle(
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                state.message,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Retry balance',
+                              onPressed: onRetry,
+                              icon: const Icon(
+                                Icons.refresh_rounded,
                                 color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (state is WalletLoading)
-                const SizedBox(
-                  height: 40,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2.5,
-                    ),
-                  ),
-                )
-              else if (state is WalletError)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.error_outline_rounded,
-                        color: Colors.white.withValues(alpha: 0.8),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
+                      )
+                    else
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
                         child: Text(
-                          state.message,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.85),
-                            fontSize: 13,
+                          formatMinor(balanceMinor),
+                          style: const TextStyle(
+                            fontSize: 38,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: -1.2,
+                            height: 1.05,
                           ),
                         ),
                       ),
-                      IconButton(
-                        tooltip: 'Retry balance',
-                        onPressed: onRetry,
-                        icon: const Icon(
-                          Icons.refresh_rounded,
-                          color: Colors.white,
+                    if (isNegative) ...[
+                      const SizedBox(height: 14),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
                         ),
-                        constraints: const BoxConstraints(),
-                        padding: const EdgeInsets.all(4),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    formatMinor(balanceMinor),
-                    style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w800,
-                      color: isNegative ? colors.error : Colors.white,
-                      letterSpacing: -1,
-                      height: 1,
-                    ),
-                  ),
-                ),
-              if (isNegative) ...[
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.22),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        size: 16,
-                        color: Colors.white.withValues(alpha: 0.95),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
                           children: [
-                            const Text(
-                              'Your balance is below zero.',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
-                              ),
+                            const Icon(
+                              Icons.info_outline_rounded,
+                              size: 16,
+                              color: Colors.white,
                             ),
-                            Text(
-                              'Consider adding income or reducing expenses.',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.85),
-                                fontSize: 11.5,
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Your balance is below zero.',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Consider adding income or reducing expenses.',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.85,
+                                      ),
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _Orb extends StatelessWidget {
+  const _Orb({required this.size, required this.alpha});
+
+  final double size;
+  final double alpha;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: alpha),
+      ),
+    );
+  }
+}
+
+class _TransactionActions extends StatelessWidget {
+  const _TransactionActions({required this.onAdd});
+
+  final ValueChanged<TransactionKind> onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final canAdd = context.watch<WalletBloc>().state is WalletLoaded;
+
+    return Row(
+      children: [
+        Expanded(
+          child: _ActionTile(
+            label: 'Add income',
+            icon: Icons.add_rounded,
+            color: AppTheme.incomeGreen,
+            onPressed: canAdd ? () => onAdd(TransactionKind.income) : null,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _ActionTile(
+            label: 'Add expense',
+            icon: Icons.remove_rounded,
+            color: AppTheme.expenseCoral,
+            onPressed: canAdd ? () => onAdd(TransactionKind.expense) : null,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Opacity(
+      opacity: onPressed == null ? 0.5 : 1,
+      child: Material(
+        color: color.withValues(alpha: isDark ? 0.18 : 0.1),
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, size: 18, color: Colors.white),
+                ),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -417,17 +524,15 @@ class _BudgetSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<BudgetBloc, BudgetState>(
       builder: (context, state) => switch (state) {
-        BudgetLoading() => const LinearProgressIndicator(),
-        BudgetError(:final message) => Row(
-          children: [
-            Expanded(child: Text(message)),
-            IconButton(
-              tooltip: 'Retry budget',
-              onPressed: () =>
-                  context.read<BudgetBloc>().add(const BudgetRetryRequested()),
-              icon: const Icon(Icons.refresh),
-            ),
-          ],
+        BudgetLoading() => ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: const LinearProgressIndicator(),
+        ),
+        BudgetError(:final message) => InlineErrorBanner(
+          message: message,
+          retryTooltip: 'Retry budget',
+          onRetry: () =>
+              context.read<BudgetBloc>().add(const BudgetRetryRequested()),
         ),
         BudgetLoaded(:final status) => _BudgetStatusView(status: status),
       },
@@ -443,56 +548,42 @@ class _BudgetStatusView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
     if (status.level == BudgetLevel.notSet) {
-      return Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : const Color(0xFFE2E8F0),
-            width: 1,
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: AppTheme.infoBlue.withValues(
+                    alpha: isDark ? 0.2 : 0.12,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.speed_rounded,
+                  color: AppTheme.infoBlue,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'No monthly limit set',
+                  style: theme.textTheme.titleMedium?.copyWith(fontSize: 14),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => context.go('/settings'),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Set a limit'),
+              ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: colors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.account_balance_wallet_outlined,
-                color: colors.primary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'No monthly limit set',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              ),
-            ),
-            TextButton.icon(
-              onPressed: () => context.go('/settings'),
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Set a limit'),
-            ),
-          ],
         ),
       );
     }
@@ -515,191 +606,171 @@ class _BudgetStatusView extends StatelessWidget {
       BudgetLevel.ok || BudgetLevel.notSet => null,
     };
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: status.level == BudgetLevel.exceeded
-              ? statusColor.withValues(alpha: 0.35)
-              : isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : const Color(0xFFE2E8F0),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: isDark ? 0.2 : 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(statusIcon, size: 16, color: statusColor),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  '${formatMinor(status.spentMinor)} of ${formatMinor(limitMinor)}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              if (status.remainingMinor != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: isDark ? 0.2 : 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
                   child: Text(
-                    status.remainingMinor! >= 0
-                        ? '${formatMinor(status.remainingMinor!)} left'
-                        : '${formatMinor(status.remainingMinor!.abs())} over',
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    'Monthly budget',
+                    style: theme.textTheme.titleSmall,
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          AnimatedGradientProgressBar(
-            progress: status.progress,
-            color: statusColor,
-            height: 8,
-            borderRadius: 6,
-          ),
-          if (message != null) ...[
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: isDark ? 0.15 : 0.08),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(statusIcon, size: 15, color: statusColor),
-                  const SizedBox(width: 8),
-                  Expanded(
+                if (status.remainingMinor != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: isDark ? 0.2 : 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
                     child: Text(
-                      message,
+                      status.remainingMinor! >= 0
+                          ? '${formatMinor(status.remainingMinor!)} left'
+                          : '${formatMinor(status.remainingMinor!.abs())} over',
                       style: TextStyle(
                         color: statusColor,
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: formatMinor(status.spentMinor),
+                    style: theme.textTheme.headlineSmall,
+                  ),
+                  TextSpan(
+                    text: '  of ${formatMinor(limitMinor)}',
+                    style: theme.textTheme.bodyMedium,
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+            AnimatedGradientProgressBar(
+              progress: status.progress,
+              color: statusColor,
+              height: 8,
+              borderRadius: 6,
+            ),
+            if (message != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: isDark ? 0.15 : 0.09),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(statusIcon, size: 15, color: statusColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        message,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MonthSelector extends StatelessWidget {
+  const _MonthSelector({required this.month});
+
+  final DateTime month;
+
+  @override
+  Widget build(BuildContext context) {
+    final monthCubit = context.read<MonthCubit>();
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: theme.inputDecorationTheme.fillColor,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'Previous month',
+            onPressed: monthCubit.canGoPrevious ? monthCubit.previous : null,
+            icon: const Icon(Icons.chevron_left_rounded, size: 24),
+          ),
+          Expanded(
+            child: Center(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.2),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                ),
+                child: Row(
+                  key: ValueKey(month),
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.calendar_month_rounded,
+                      size: 18,
+                      color: AppTheme.primaryEmerald,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      DateFormat.yMMMM().format(month),
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Next month',
+            onPressed: monthCubit.canGoNext ? monthCubit.next : null,
+            icon: const Icon(Icons.chevron_right_rounded, size: 24),
+          ),
         ],
       ),
     );
   }
 }
 
-class _TransactionActions extends StatelessWidget {
-  const _TransactionActions({required this.onAdd});
-
-  final ValueChanged<TransactionKind> onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    final canAdd = context.watch<WalletBloc>().state is WalletLoaded;
-
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppTheme.incomeGreen, Color(0xFF059669)],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.incomeGreen.withValues(alpha: 0.35),
-                  blurRadius: 14,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: FilledButton.icon(
-              onPressed: canAdd ? () => onAdd(TransactionKind.income) : null,
-              icon: const Icon(Icons.add_rounded, size: 20),
-              label: const Text('Add income'),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                elevation: 0,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Container(
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppTheme.expenseCoral, Color(0xFFE11D48)],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.expenseCoral.withValues(alpha: 0.35),
-                  blurRadius: 14,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: FilledButton.icon(
-              onPressed: canAdd ? () => onAdd(TransactionKind.expense) : null,
-              icon: const Icon(Icons.remove_rounded, size: 20),
-              label: const Text('Add expense'),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                elevation: 0,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _TransactionsList extends StatelessWidget {
-  const _TransactionsList({
+class _TransactionsSliver extends StatelessWidget {
+  const _TransactionsSliver({
     required this.transactions,
     required this.errorMessage,
     required this.onEdit,
@@ -711,79 +782,6 @@ class _TransactionsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    if (transactions.isEmpty) {
-      return LayoutBuilder(
-        builder: (context, constraints) => SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: IntrinsicHeight(
-              child: Column(
-                children: [
-                  if (errorMessage != null)
-                    _InlineError(message: errorMessage!),
-                  const Spacer(),
-                  PulsingBadge(
-                    duration: const Duration(milliseconds: 2000),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryEmerald.withValues(
-                          alpha: isDark ? 0.15 : 0.08,
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.receipt_long_rounded,
-                        size: 40,
-                        color: AppTheme.primaryEmerald,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No transactions yet',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Add your starting balance to begin tracking.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 14),
-                  OutlinedButton.icon(
-                    onPressed:
-                        context.read<WalletBloc>().state is WalletLoaded
-                            ? () => showTransactionForm(
-                                context,
-                                kind: TransactionKind.income,
-                              )
-                            : null,
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('Add your starting balance'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 14,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
     final grouped = <DateTime, List<TransactionEntity>>{};
     for (final transaction in transactions) {
       final day = DateTime(
@@ -794,78 +792,85 @@ class _TransactionsList extends StatelessWidget {
       grouped.putIfAbsent(day, () => []).add(transaction);
     }
 
-    return Column(
-      children: [
-        if (errorMessage != null) _InlineError(message: errorMessage!),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.only(bottom: 24),
-            children: [
-              for (final entry in grouped.entries) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 14, 0, 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 4,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryEmerald,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        DateFormat.yMMMMd().format(entry.key),
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${entry.value.length} items',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: entry.value.length,
-                    separatorBuilder: (_, __) => Divider(
-                      height: 1,
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.05)
-                          : const Color(0xFFF1F5F9),
-                    ),
-                    itemBuilder: (context, index) {
-                      final transaction = entry.value[index];
-                      return EntranceAnimation(
-                        delay: Duration(
-                          milliseconds: index < 10 ? index * 30 : 300,
-                        ),
-                        duration: const Duration(milliseconds: 320),
-                        offset: const Offset(0, 0.03),
-                        child: _TransactionTile(
-                          transaction: transaction,
-                          onEdit: () => onEdit(transaction),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ],
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          if (errorMessage != null) ...[
+            const SizedBox(height: 8),
+            InlineErrorBanner(message: errorMessage!),
+          ],
+          for (final entry in grouped.entries) ...[
+            _DayHeader(day: entry.key, count: entry.value.length),
+            _DayCard(transactions: entry.value, onEdit: onEdit),
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
+class _DayHeader extends StatelessWidget {
+  const _DayHeader({required this.day, required this.count});
+
+  final DateTime day;
+  final int count;
+
+  String get _label {
+    final now = DateTime.now();
+    if (DateUtils.isSameDay(day, now)) return 'Today';
+    if (DateUtils.isSameDay(day, now.subtract(const Duration(days: 1)))) {
+      return 'Yesterday';
+    }
+    return DateFormat.yMMMMd().format(day);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(_label, style: theme.textTheme.titleSmall),
+          Text(
+            count == 1 ? '1 item' : '$count items',
+            style: theme.textTheme.bodySmall,
           ),
-        ),
-      ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DayCard extends StatelessWidget {
+  const _DayCard({required this.transactions, required this.onEdit});
+
+  final List<TransactionEntity> transactions;
+  final ValueChanged<TransactionEntity> onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (var i = 0; i < transactions.length; i++) ...[
+            if (i > 0) const Divider(height: 1, indent: 72),
+            EntranceAnimation(
+              delay: Duration(milliseconds: i < 10 ? i * 30 : 300),
+              duration: const Duration(milliseconds: 320),
+              offset: const Offset(0, 0.03),
+              child: _TransactionTile(
+                transaction: transactions[i],
+                onEdit: () => onEdit(transactions[i]),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -878,10 +883,14 @@ class _TransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isIncome = transaction.kind == TransactionKind.income;
-    final colors = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final accentColor = isIncome ? AppTheme.incomeGreen : AppTheme.expenseCoral;
+
+    final hasDistinctTitle =
+        transaction.title != null &&
+        transaction.title != transaction.categoryName;
 
     return Dismissible(
       key: ValueKey('transaction-${transaction.id}'),
@@ -889,9 +898,7 @@ class _TransactionTile extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        decoration: BoxDecoration(
-          color: AppTheme.expenseCoral.withValues(alpha: 0.15),
-        ),
+        color: AppTheme.expenseCoral.withValues(alpha: isDark ? 0.2 : 0.14),
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -927,38 +934,41 @@ class _TransactionTile extends StatelessWidget {
       },
       child: ListTile(
         onTap: onEdit,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         leading: Container(
           width: 44,
           height: 44,
           decoration: BoxDecoration(
             color: accentColor.withValues(alpha: isDark ? 0.2 : 0.12),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: accentColor.withValues(alpha: isDark ? 0.35 : 0.2),
-              width: 1,
-            ),
           ),
           child: Icon(
             CategoryIcons.getIcon(transaction.categoryIconKey),
             color: accentColor,
-            size: 20,
+            size: 22,
           ),
         ),
         title: Text(
           transaction.title ?? transaction.categoryName,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.titleMedium?.copyWith(fontSize: 15),
         ),
-        subtitle: Text(
-          transaction.categoryName,
-          style: TextStyle(color: colors.onSurfaceVariant, fontSize: 13),
-        ),
+        subtitle: hasDistinctTitle
+            ? Text(
+                transaction.categoryName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(fontSize: 13),
+              )
+            : null,
         trailing: Text(
           '${isIncome ? '+' : '−'}${formatMinor(transaction.amountMinor)}',
           style: TextStyle(
             color: accentColor,
             fontWeight: FontWeight.w800,
             fontSize: 16,
+            letterSpacing: -0.2,
           ),
         ),
       ),
@@ -966,42 +976,65 @@ class _TransactionTile extends StatelessWidget {
   }
 }
 
-class _InlineError extends StatelessWidget {
-  const _InlineError({required this.message});
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.errorMessage});
 
-  final String message;
+  final String? errorMessage;
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final canAdd = context.read<WalletBloc>().state is WalletLoaded;
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: colors.errorContainer,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colors.error.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.error_outline_rounded, color: colors.error, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(
-                color: colors.onErrorContainer,
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (errorMessage != null) ...[
+              InlineErrorBanner(message: errorMessage!),
+              const SizedBox(height: 24),
+            ],
+            PulsingBadge(
+              duration: const Duration(milliseconds: 2000),
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryEmerald.withValues(
+                    alpha: isDark ? 0.15 : 0.08,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.receipt_long_rounded,
+                  size: 40,
+                  color: AppTheme.primaryEmerald,
+                ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text('No transactions yet', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 6),
+            Text(
+              'Add your starting balance to begin tracking.',
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            FilledButton.tonalIcon(
+              onPressed: canAdd
+                  ? () => showTransactionForm(
+                      context,
+                      kind: TransactionKind.income,
+                    )
+                  : null,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add your starting balance'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1016,146 +1049,32 @@ class _RetryView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : const Color(0xFFE2E8F0),
-              ),
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 48,
+              color: AppTheme.expenseCoral,
             ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.error_outline_rounded,
-                  size: 48,
-                  color: theme.colorScheme.error,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 20),
-                OutlinedButton.icon(
-                  onPressed: onRetry,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Retry'),
-                ),
-              ],
+            const SizedBox(height: 14),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MonthSelector extends StatelessWidget {
-  const _MonthSelector({required this.month});
-
-  final DateTime month;
-
-  @override
-  Widget build(BuildContext context) {
-    final monthCubit = context.read<MonthCubit>();
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : const Color(0xFFE2E8F0),
+            const SizedBox(height: 18),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            tooltip: 'Previous month',
-            style: IconButton.styleFrom(
-              padding: const EdgeInsets.all(8),
-              minimumSize: const Size(38, 38),
-            ),
-            onPressed: monthCubit.canGoPrevious ? monthCubit.previous : null,
-            icon: const Icon(Icons.chevron_left_rounded, size: 22),
-          ),
-          Expanded(
-            child: Center(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                transitionBuilder: (child, animation) => FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.2),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
-                  ),
-                ),
-                child: Row(
-                  key: ValueKey(month),
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryEmerald.withValues(
-                          alpha: isDark ? 0.2 : 0.1,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.calendar_month_rounded,
-                        size: 15,
-                        color: AppTheme.primaryEmerald,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      DateFormat.yMMMM().format(month),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          IconButton(
-            tooltip: 'Next month',
-            style: IconButton.styleFrom(
-              padding: const EdgeInsets.all(8),
-              minimumSize: const Size(38, 38),
-            ),
-            onPressed: monthCubit.canGoNext ? monthCubit.next : null,
-            icon: const Icon(Icons.chevron_right_rounded, size: 22),
-          ),
-        ],
       ),
     );
   }

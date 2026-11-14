@@ -1,3 +1,5 @@
+// lib/features/transactions/presentation/transaction_form_sheet.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -55,9 +57,6 @@ class _TransactionFormSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return BlocListener<TransactionFormCubit, TransactionFormState>(
       listenWhen: (previous, current) =>
           previous.isSubmitted != current.isSubmitted && current.isSubmitted,
@@ -68,7 +67,7 @@ class _TransactionFormSheet extends StatelessWidget {
         ),
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
             child: BlocBuilder<TransactionFormCubit, TransactionFormState>(
               builder: (context, state) {
                 final isIncome = state.kind == TransactionKind.income;
@@ -80,31 +79,38 @@ class _TransactionFormSheet extends StatelessWidget {
                 final accentColor = isIncome
                     ? AppTheme.incomeGreen
                     : AppTheme.expenseCoral;
+                final accentGradient = isIncome
+                    ? AppTheme.incomeGradient
+                    : AppTheme.expenseGradient;
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // ── Header ────────────────────────────────────────
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(11),
                           decoration: BoxDecoration(
-                            color: accentColor.withValues(
-                              alpha: isDark ? 0.2 : 0.12,
-                            ),
+                            gradient: accentGradient,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: accentColor.withValues(
-                                alpha: isDark ? 0.35 : 0.2,
+                            boxShadow: [
+                              BoxShadow(
+                                color: accentColor.withValues(
+                                  alpha: isIncome ? 0.32 : 0.28,
+                                ),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
                               ),
-                            ),
+                            ],
                           ),
                           child: Icon(
                             isIncome
                                 ? Icons.arrow_downward_rounded
                                 : Icons.arrow_upward_rounded,
-                            color: accentColor,
+                            color: Colors.white,
                             size: 22,
                           ),
                         ),
@@ -115,18 +121,25 @@ class _TransactionFormSheet extends StatelessWidget {
                             children: [
                               Text(
                                 sheetTitle,
-                                style: theme.textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.4,
-                                ),
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.4,
+                                    ),
                               ),
+                              const SizedBox(height: 2),
                               Text(
                                 isIncome
                                     ? 'Deposit funds to your wallet'
                                     : 'Log expenditure against your budget',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
                               ),
                             ],
                           ),
@@ -138,13 +151,20 @@ class _TransactionFormSheet extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 20),
+
                     if (state.isLoading)
                       const SizedBox(
-                        height: 120,
+                        height: 160,
                         child: Center(child: CircularProgressIndicator()),
                       )
                     else ...[
+                      // ── Amount field ─────────────────────────────
+                      _SectionLabel(
+                        text: 'AMOUNT',
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 8),
                       TextFormField(
                         key: const ValueKey('transaction-amount'),
                         initialValue: state.amountText,
@@ -157,32 +177,43 @@ class _TransactionFormSheet extends StatelessWidget {
                             RegExp(r'^\d*\.?\d{0,2}'),
                           ),
                         ],
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.6,
+                            ),
                         decoration: InputDecoration(
-                          labelText: 'Amount',
                           hintText: '0.00',
-                          prefixIcon: const Icon(Icons.payments_outlined),
-                          suffixText: 'EGP',
-                          suffixStyle: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
+                          prefixIcon: const Padding(
+                            padding: EdgeInsets.only(left: 4, right: 8),
+                            child: Icon(Icons.payments_outlined, size: 22),
                           ),
+                          suffixText: 'EGP',
+                          suffixStyle: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                                letterSpacing: 0.3,
+                              ),
                         ),
                         onChanged: context
                             .read<TransactionFormCubit>()
                             .amountChanged,
                       ),
+
                       if (isIncome) ...[
                         const SizedBox(height: 16),
+                        _SectionLabel(
+                          text: 'TITLE',
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(height: 8),
                         TextFormField(
                           key: const ValueKey('transaction-title'),
                           initialValue: state.title,
                           decoration: const InputDecoration(
-                            labelText: 'Title',
                             hintText: 'e.g., Salary, Bonus, Freelance',
                             prefixIcon: Icon(Icons.edit_note_rounded),
                           ),
@@ -191,169 +222,102 @@ class _TransactionFormSheet extends StatelessWidget {
                               .titleChanged,
                         ),
                       ],
+
                       const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 18,
-                            decoration: BoxDecoration(
-                              color: accentColor,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Category',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                        ],
+
+                      // ── Category section ────────────────────────
+                      _SectionLabel(
+                        text: 'CATEGORY',
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
+
                       if (state.categories.isEmpty)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF1E293B)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.08)
-                                  : const Color(0xFFE2E8F0),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.category_outlined,
-                                size: 40,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'No categories available',
-                                style: TextStyle(fontWeight: FontWeight.w700),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Add a category in Settings to continue.',
-                                style: TextStyle(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
+                        _EmptyCategoriesCard(onOpenSettings: null)
                       else
                         Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
                             for (final category in state.categories)
-                              ChoiceChip(
-                                avatar: Icon(
-                                  CategoryIcons.getIcon(category.iconKey),
-                                  size: 18,
-                                  color: category.id == state.selectedCategoryId
-                                      ? accentColor
-                                      : theme.colorScheme.onSurfaceVariant,
-                                ),
-                                label: Text(category.name),
+                              _CategoryPill(
+                                category: category,
                                 selected:
                                     category.id == state.selectedCategoryId,
-                                selectedColor: accentColor.withValues(
-                                  alpha: isDark ? 0.25 : 0.15,
-                                ),
-                                checkmarkColor: accentColor,
-                                labelStyle: TextStyle(
-                                  fontWeight:
-                                      category.id == state.selectedCategoryId
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                ),
-                                onSelected: (_) => context
+                                accentColor: accentColor,
+                                onTap: () => context
                                     .read<TransactionFormCubit>()
                                     .categorySelected(category.id),
                               ),
                           ],
                         ),
+
                       if (state.errorMessage != null) ...[
-                        const SizedBox(height: 14),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.errorContainer,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: theme.colorScheme.error.withValues(
-                                alpha: 0.3,
-                              ),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.error_outline_rounded,
-                                color: theme.colorScheme.error,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  state.errorMessage!,
-                                  style: TextStyle(
-                                    color: theme.colorScheme.onErrorContainer,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        const SizedBox(height: 16),
+                        _ErrorBanner(message: state.errorMessage!),
                       ],
+
                       const SizedBox(height: 24),
+
+                      // ── Save button ─────────────────────────────
                       SizedBox(
                         width: double.infinity,
-                        height: 54,
-                        child: FilledButton(
-                          onPressed:
-                              state.isSubmitting || state.categories.isEmpty
-                              ? null
-                              : () => _save(context, state),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: accentColor,
-                            shape: RoundedRectangleBorder(
+                        height: 56,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient:
+                                state.isSubmitting || state.categories.isEmpty
+                                ? LinearGradient(
+                                    colors: [
+                                      accentColor.withValues(alpha: 0.5),
+                                      accentColor.withValues(alpha: 0.4),
+                                    ],
+                                  )
+                                : accentGradient,
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow:
+                                state.isSubmitting || state.categories.isEmpty
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color: accentColor.withValues(
+                                        alpha: isIncome ? 0.35 : 0.30,
+                                      ),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap:
+                                  state.isSubmitting || state.categories.isEmpty
+                                  ? null
+                                  : () => _save(context, state),
                               borderRadius: BorderRadius.circular(18),
+                              child: Center(
+                                child: state.isSubmitting
+                                    ? const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : Text(
+                                        transaction == null ? 'Save' : 'Update',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 16,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                              ),
                             ),
                           ),
-                          child: state.isSubmitting
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text(
-                                  'Save',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 16,
-                                  ),
-                                ),
                         ),
                       ),
                     ],
@@ -410,10 +374,10 @@ class _TransactionFormSheet extends StatelessWidget {
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
-                color: AppTheme.expenseCoral.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: AppTheme.expenseCoral.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(11),
               ),
               child: const Icon(
                 Icons.warning_rounded,
@@ -421,13 +385,13 @@ class _TransactionFormSheet extends StatelessWidget {
                 size: 20,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             const Text('Negative balance'),
           ],
         ),
         content: Text(
           'This puts your wallet at −${formatMinor(projectedBalance.abs())}. Save anyway?',
-          style: const TextStyle(fontSize: 14),
+          style: const TextStyle(fontSize: 14, height: 1.4),
         ),
         actions: [
           TextButton(
@@ -445,5 +409,217 @@ class _TransactionFormSheet extends StatelessWidget {
       ),
     );
     return confirmed == true;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Section label
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.text, required this.color});
+
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 11.5,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 1.0,
+        color: color.withValues(alpha: 0.75),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Category pill
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CategoryPill extends StatelessWidget {
+  const _CategoryPill({
+    required this.category,
+    required this.selected,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  final dynamic category;
+  final bool selected;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final bg = selected
+        ? accentColor.withValues(alpha: isDark ? 0.22 : 0.14)
+        : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9));
+    final fg = selected ? accentColor : theme.colorScheme.onSurfaceVariant;
+    final border = selected
+        ? accentColor.withValues(alpha: isDark ? 0.5 : 0.35)
+        : (isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : const Color(0xFFE2E8F0));
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: border, width: 1),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  CategoryIcons.getIcon(category.iconKey),
+                  size: 16,
+                  color: fg,
+                ),
+                const SizedBox(width: 7),
+                Text(
+                  category.name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    letterSpacing: 0.05,
+                    color: fg,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Empty categories card
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _EmptyCategoriesCard extends StatelessWidget {
+  const _EmptyCategoriesCard({this.onOpenSettings});
+
+  final VoidCallback? onOpenSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onSurfaceVariant.withValues(
+                alpha: isDark ? 0.12 : 0.08,
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.category_outlined,
+              size: 28,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'No categories available',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Add a category in Settings to continue.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 12.5,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Error banner
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ErrorBanner extends StatelessWidget {
+  const _ErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: theme.colorScheme.error.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(
+              Icons.error_outline_rounded,
+              color: theme.colorScheme.error,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: theme.colorScheme.onErrorContainer,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

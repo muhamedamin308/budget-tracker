@@ -1,3 +1,5 @@
+// lib/features/stats/presentation/stats_page.dart
+
 import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
@@ -46,6 +48,7 @@ class _StatsPageView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return BlocListener<MonthCubit, DateTime>(
       listener: (context, month) =>
@@ -58,42 +61,65 @@ class _StatsPageView extends StatelessWidget {
             children: [
               const SizedBox(height: 10),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Financial Analytics',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.6,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Financial Analytics',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Breakdown of spending & cash flow',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                        const SizedBox(height: 3),
+                        Text(
+                          'Breakdown of spending & cash flow',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 12),
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(11),
                     decoration: BoxDecoration(
-                      color: AppTheme.infoBlue.withValues(alpha: 0.12),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppTheme.infoBlue.withValues(
+                            alpha: isDark ? 0.28 : 0.16,
+                          ),
+                          AppTheme.infoBlue.withValues(
+                            alpha: isDark ? 0.12 : 0.05,
+                          ),
+                        ],
+                      ),
                       borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppTheme.infoBlue.withValues(
+                          alpha: isDark ? 0.3 : 0.2,
+                        ),
+                      ),
                     ),
                     child: const Icon(
                       Icons.insights_rounded,
                       color: AppTheme.infoBlue,
-                      size: 20,
+                      size: 22,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               EntranceAnimation(
                 child: BlocBuilder<MonthCubit, DateTime>(
                   builder: (context, month) => _MonthSelector(month: month),
@@ -140,7 +166,7 @@ class _MonthSelector extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -151,7 +177,7 @@ class _MonthSelector extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.03),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -187,20 +213,20 @@ class _MonthSelector extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(5),
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: AppTheme.primaryEmerald.withValues(
-                          alpha: isDark ? 0.2 : 0.1,
+                          alpha: isDark ? 0.22 : 0.1,
                         ),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(9),
                       ),
                       child: const Icon(
                         Icons.calendar_month_rounded,
-                        size: 15,
+                        size: 16,
                         color: AppTheme.primaryEmerald,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 9),
                     Text(
                       DateFormat.yMMMM().format(month),
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -236,41 +262,21 @@ class _StatsContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return ListView(
       padding: const EdgeInsets.only(bottom: 40),
       children: [
-        EntranceAnimation(
-          child: _Summary(monthStats: monthStats),
-        ),
+        EntranceAnimation(child: _Summary(monthStats: monthStats)),
         const SizedBox(height: 12),
         EntranceAnimation(
           delay: const Duration(milliseconds: 60),
           child: _BudgetProgress(month: monthStats.month),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 20),
         EntranceAnimation(
           delay: const Duration(milliseconds: 100),
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryEmerald,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Spending by Category',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ],
+          child: const _SectionHeader(
+            label: 'SPENDING BY CATEGORY',
+            accent: AppTheme.primaryEmerald,
           ),
         ),
         const SizedBox(height: 10),
@@ -287,13 +293,13 @@ class _StatsContent extends StatelessWidget {
             delay: const Duration(milliseconds: 140),
             child: Card(
               child: Padding(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
                 child: Column(
                   children: [
                     _DonutChart(monthStats: monthStats),
                     const SizedBox(height: 18),
                     const Divider(height: 1),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                     _CategoryList(monthStats: monthStats),
                   ],
                 ),
@@ -304,48 +310,40 @@ class _StatsContent extends StatelessWidget {
         EntranceAnimation(
           delay: const Duration(milliseconds: 180),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryEmerald,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Spending Trend',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ],
+              const Expanded(
+                child: _SectionHeader(
+                  label: 'SPENDING TREND',
+                  accent: AppTheme.primaryEmerald,
+                ),
               ),
+              const SizedBox(width: 8),
               SizedBox(
-                height: 36,
+                height: 34,
                 child: SegmentedButton<StatsBucketType>(
                   style: SegmentedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     padding: const EdgeInsets.symmetric(horizontal: 10),
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.1,
+                    ),
                   ),
                   segments: const [
                     ButtonSegment(
                       value: StatsBucketType.daily,
-                      label: Text('Daily', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      label: Text('Daily'),
                     ),
                     ButtonSegment(
                       value: StatsBucketType.weekly,
-                      label: Text('Weekly', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      label: Text('Weekly'),
                     ),
                   ],
                   selected: {bucketType},
-                  onSelectionChanged: (selection) =>
-                      context.read<StatsBloc>().add(BucketToggled(selection.first)),
+                  onSelectionChanged: (selection) => context
+                      .read<StatsBloc>()
+                      .add(BucketToggled(selection.first)),
                 ),
               ),
             ],
@@ -365,7 +363,7 @@ class _StatsContent extends StatelessWidget {
             delay: const Duration(milliseconds: 220),
             child: Card(
               child: Padding(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.fromLTRB(14, 18, 14, 12),
                 child: _SpendingBarChart(
                   buckets: bucketType == StatsBucketType.daily
                       ? monthStats.dailyBuckets
@@ -375,6 +373,40 @@ class _StatsContent extends StatelessWidget {
               ),
             ),
           ),
+      ],
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label, required this.accent});
+
+  final String label;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: 12,
+          decoration: BoxDecoration(
+            color: accent,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.0,
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.85),
+          ),
+        ),
       ],
     );
   }
@@ -391,8 +423,19 @@ class _Summary extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        gradient: isDark
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+              )
+            : const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFF0FDF9), Color(0xFFFFFFFF)],
+              ),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: isDark
@@ -401,13 +444,12 @@ class _Summary extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 10),
       child: Row(
         children: [
           Expanded(
@@ -418,13 +460,7 @@ class _Summary extends StatelessWidget {
               icon: Icons.arrow_downward_rounded,
             ),
           ),
-          Container(
-            height: 42,
-            width: 1,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : const Color(0xFFE2E8F0),
-          ),
+          _SummaryDivider(isDark: isDark),
           Expanded(
             child: _SummaryMetric(
               label: 'Expenses',
@@ -433,13 +469,7 @@ class _Summary extends StatelessWidget {
               icon: Icons.arrow_upward_rounded,
             ),
           ),
-          Container(
-            height: 42,
-            width: 1,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : const Color(0xFFE2E8F0),
-          ),
+          _SummaryDivider(isDark: isDark),
           Expanded(
             child: _SummaryMetric(
               label: 'Net Cash',
@@ -454,6 +484,23 @@ class _Summary extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SummaryDivider extends StatelessWidget {
+  const _SummaryDivider({required this.isDark});
+
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 46,
+      width: 1,
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.08)
+          : const Color(0xFFE2E8F0),
     );
   }
 }
@@ -482,25 +529,26 @@ class _SummaryMetric extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: color.withValues(alpha: isDark ? 0.2 : 0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 13, color: color),
+              Icon(icon, size: 12, color: color),
               const SizedBox(width: 4),
               Text(
                 label,
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  fontSize: 11.5,
+                  fontSize: 11,
+                  letterSpacing: 0.1,
                   color: color,
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         FittedBox(
           fit: BoxFit.scaleDown,
           child: Text(
@@ -508,8 +556,8 @@ class _SummaryMetric extends StatelessWidget {
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w800,
-              fontSize: 15.5,
-              letterSpacing: -0.3,
+              fontSize: 16,
+              letterSpacing: -0.4,
             ),
           ),
         ),
@@ -536,8 +584,9 @@ class _BudgetProgress extends StatelessWidget {
                 const Expanded(child: Text('Could not load the budget.')),
                 IconButton(
                   tooltip: 'Retry budget',
-                  onPressed: () =>
-                      context.read<BudgetBloc>().add(const BudgetRetryRequested()),
+                  onPressed: () => context.read<BudgetBloc>().add(
+                    const BudgetRetryRequested(),
+                  ),
                   icon: const Icon(Icons.refresh),
                 ),
               ],
@@ -564,10 +613,10 @@ class _BudgetProgress extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(9),
                 decoration: BoxDecoration(
                   color: colors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(11),
                 ),
                 child: Icon(
                   Icons.account_balance_wallet_outlined,
@@ -579,7 +628,7 @@ class _BudgetProgress extends StatelessWidget {
               const Expanded(
                 child: Text(
                   'No monthly budget set',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                 ),
               ),
               TextButton(
@@ -602,63 +651,77 @@ class _BudgetProgress extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.speed_rounded,
-                      size: 16,
-                      color: colors.onSurfaceVariant,
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: isDark ? 0.22 : 0.12),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Icon(
+                    Icons.speed_rounded,
+                    size: 15,
+                    color: statusColor,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Budget Utilization',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.2,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Budget Utilization',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: isDark ? 0.25 : 0.12),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(11),
                   ),
                   child: Text(
                     '$percentage%',
                     style: TextStyle(
                       color: statusColor,
                       fontSize: 12,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.1,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                RichText(
-                  text: TextSpan(
-                    style: theme.textTheme.bodyMedium,
-                    children: [
-                      TextSpan(
-                        text: formatMinor(status.spentMinor),
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      TextSpan(
-                        text: ' of ${formatMinor(status.limitMinor!)}',
-                        style: TextStyle(color: colors.onSurfaceVariant),
-                      ),
-                    ],
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: theme.textTheme.bodyMedium,
+                      children: [
+                        TextSpan(
+                          text: formatMinor(status.spentMinor),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: null,
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' of ${formatMinor(status.limitMinor!)}',
+                          style: TextStyle(color: colors.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 if (status.remainingMinor != null)
@@ -669,7 +732,7 @@ class _BudgetProgress extends StatelessWidget {
                     style: TextStyle(
                       color: statusColor,
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
               ],
@@ -695,6 +758,7 @@ class _DonutChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final topCategories = monthStats.byCategory.take(5).toList();
     final otherAmount = monthStats.byCategory
         .skip(5)
@@ -705,27 +769,27 @@ class _DonutChart extends StatelessWidget {
         PieChartSectionData(
           value: topCategories[index].amountMinor.toDouble(),
           color: _categoryPalette[index % _categoryPalette.length],
-          radius: 28,
+          radius: 30,
           showTitle: false,
         ),
       if (otherAmount > 0)
         PieChartSectionData(
           value: otherAmount.toDouble(),
           color: const Color(0xFF94A3B8),
-          radius: 28,
+          radius: 30,
           showTitle: false,
         ),
     ];
 
     return SizedBox(
-      height: 200,
+      height: 210,
       child: Stack(
         alignment: Alignment.center,
         children: [
           PieChart(
             PieChartData(
               sections: sections,
-              centerSpaceRadius: 65,
+              centerSpaceRadius: 68,
               sectionsSpace: 4,
               startDegreeOffset: -90,
             ),
@@ -734,18 +798,23 @@ class _DonutChart extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Total Spent',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w500,
+                'TOTAL SPENT',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0,
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.75,
+                  ),
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 formatMinor(monthStats.expenseMinor),
                 style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: -0.4,
+                  letterSpacing: -0.5,
                 ),
               ),
             ],
@@ -797,57 +866,59 @@ class _CategoryRow extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 9),
       child: Column(
         children: [
           Row(
             children: [
               Container(
-                width: 12,
-                height: 12,
+                width: 10,
+                height: 10,
                 decoration: BoxDecoration(
                   color: color,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: color.withValues(alpha: 0.4),
-                      blurRadius: 4,
+                      color: color.withValues(alpha: 0.45),
+                      blurRadius: 5,
                       offset: const Offset(0, 1),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 11),
               Expanded(
                 child: Text(
                   category.name,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     fontSize: 14,
+                    letterSpacing: -0.1,
                   ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: isDark ? 0.2 : 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(9),
                 ),
                 child: Text(
                   '${percentage.toStringAsFixed(1)}%',
                   style: TextStyle(
                     color: color,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11.5,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Text(
                 formatMinor(category.amountMinor),
                 style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13.5,
+                  letterSpacing: -0.1,
                 ),
               ),
             ],
@@ -931,9 +1002,8 @@ class _SpendingBarChart extends StatelessWidget {
                         meta: meta,
                         child: Text(
                           label,
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       );
                     },
@@ -950,10 +1020,7 @@ class _SpendingBarChart extends StatelessWidget {
                         gradient: const LinearGradient(
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
-                          colors: [
-                            Color(0xFF0D9373),
-                            Color(0xFF2DD4BF),
-                          ],
+                          colors: [Color(0xFF0D9373), Color(0xFF2DD4BF)],
                         ),
                         width: bucketType == StatsBucketType.daily ? 12 : 24,
                         borderRadius: const BorderRadius.vertical(
@@ -991,10 +1058,12 @@ class _EmptySection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryEmerald.withValues(alpha: isDark ? 0.12 : 0.08),
+                  color: AppTheme.primaryEmerald.withValues(
+                    alpha: isDark ? 0.12 : 0.08,
+                  ),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 48, color: AppTheme.primaryEmerald),
+                child: Icon(icon, size: 46, color: AppTheme.primaryEmerald),
               ),
               const SizedBox(height: 16),
               Text(
@@ -1030,9 +1099,7 @@ class _RetryView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF1E293B)
-                  : Colors.white,
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isDark
@@ -1042,10 +1109,19 @@ class _RetryView extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Icon(
-                  Icons.cloud_off_rounded,
-                  size: 48,
-                  color: theme.colorScheme.onSurfaceVariant,
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(
+                      alpha: isDark ? 0.12 : 0.08,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.cloud_off_rounded,
+                    size: 32,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -1056,7 +1132,7 @@ class _RetryView extends StatelessWidget {
                 const SizedBox(height: 20),
                 OutlinedButton.icon(
                   onPressed: onRetry,
-                  icon: const Icon(Icons.refresh_rounded),
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
                   label: const Text('Retry'),
                 ),
               ],
