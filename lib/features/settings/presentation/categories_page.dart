@@ -32,7 +32,10 @@ abstract final class _S {
   static const save = 'Save';
   static const create = 'Create';
 
-  static String tabLabel(String label, int count) => '$label ($count)';
+  static String count(int n) => n == 1 ? '1 category' : '$n categories';
+
+  static String headerTitle(bool isIncome) =>
+      isIncome ? 'Income categories' : 'Expense categories';
 
   static String archiveBody(String name) =>
       '$name will be hidden from new transactions. '
@@ -44,6 +47,10 @@ abstract final class _S {
 }
 
 const int _maxNameLength = 40;
+
+Color _accent(CategoryType type) => type == CategoryType.income
+    ? AppTheme.incomeGreen
+    : AppTheme.primaryEmerald;
 
 class CategoriesPage extends StatelessWidget {
   const CategoriesPage({super.key});
@@ -74,7 +81,7 @@ class _CategoriesViewState extends State<_CategoriesView> {
       useSafeArea: true,
       showDragHandle: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (_) =>
           _CategoryEditorSheet(category: category, initialType: _type),
@@ -182,41 +189,25 @@ class _LoadedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final outline = theme.colorScheme.outlineVariant;
     final banner = errorMessage;
-
+    final visible = categories.where((c) => c.type == type).toList();
     final expenseCount = categories
         .where((c) => c.type == CategoryType.expense)
         .length;
     final incomeCount = categories
         .where((c) => c.type == CategoryType.income)
         .length;
-    final visible = categories.where((c) => c.type == type).toList();
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-          child: SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<CategoryType>(
-              showSelectedIcon: false,
-              style: SegmentedButton.styleFrom(minimumSize: const Size(0, 48)),
-              segments: [
-                ButtonSegment(
-                  value: CategoryType.expense,
-                  label: Text(_S.tabLabel(_S.expense, expenseCount)),
-                ),
-                ButtonSegment(
-                  value: CategoryType.income,
-                  label: Text(_S.tabLabel(_S.income, incomeCount)),
-                ),
-              ],
-              selected: {type},
-              onSelectionChanged: (selection) => onTypeChanged(selection.first),
-            ),
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+          child: _HeaderCard(
+            type: type,
+            count: type == CategoryType.income ? incomeCount : expenseCount,
+            expenseCount: expenseCount,
+            incomeCount: incomeCount,
+            onTypeChanged: onTypeChanged,
           ),
         ),
         if (banner != null)
@@ -232,43 +223,186 @@ class _LoadedView extends StatelessWidget {
         Expanded(
           child: visible.isEmpty
               ? _EmptyState(isIncome: type == CategoryType.income, onAdd: onAdd)
-              : ListView(
+              : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
-                  children: [
-                    Material(
-                      color: theme.cardColor,
-                      clipBehavior: Clip.antiAlias,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: outline.withValues(alpha: isDark ? 0.3 : 0.5),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          for (var i = 0; i < visible.length; i++) ...[
-                            if (i > 0)
-                              Divider(
-                                height: 1,
-                                indent: 70,
-                                color: outline.withValues(alpha: 0.4),
-                              ),
-                            _CategoryTile(
-                              category: visible[i],
-                              onRename: () => onRename(visible[i]),
-                              onArchive: () => onArchive(visible[i]),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
+                  itemCount: visible.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (context, i) => _CategoryTile(
+                    category: visible[i],
+                    onRename: () => onRename(visible[i]),
+                    onArchive: () => onArchive(visible[i]),
+                  ),
                 ),
         ),
       ],
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Header: gradient summary + type toggle
+// ---------------------------------------------------------------------------
+
+class _HeaderCard extends StatelessWidget {
+  const _HeaderCard({
+    required this.type,
+    required this.count,
+    required this.expenseCount,
+    required this.incomeCount,
+    required this.onTypeChanged,
+  });
+
+  final CategoryType type;
+  final int count;
+  final int expenseCount;
+  final int incomeCount;
+  final ValueChanged<CategoryType> onTypeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isIncome = type == CategoryType.income;
+
+    final gradient = isDark
+        ? AppTheme.darkCardGradient
+        : AppTheme.primaryGradient;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.45)
+                : AppTheme.primaryEmerald.withValues(alpha: 0.3),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -30,
+            top: -40,
+            child: Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.09),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _S.headerTitle(isIncome),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.85),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _S.count(count),
+                  style: const TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: -0.8,
+                    height: 1.05,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      _TogglePill(
+                        label: '${_S.expense} ($expenseCount)',
+                        selected: type == CategoryType.expense,
+                        onTap: () => onTypeChanged(CategoryType.expense),
+                      ),
+                      _TogglePill(
+                        label: '${_S.income} ($incomeCount)',
+                        selected: type == CategoryType.income,
+                        onTap: () => onTypeChanged(CategoryType.income),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TogglePill extends StatelessWidget {
+  const _TogglePill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        excludeSemantics: true,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(vertical: 11),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: selected ? Colors.white : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+                color: selected
+                    ? AppTheme.primaryEmerald
+                    : Colors.white.withValues(alpha: 0.9),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// List items
+// ---------------------------------------------------------------------------
 
 class _CategoryTile extends StatelessWidget {
   const _CategoryTile({
@@ -283,60 +417,80 @@ class _CategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = _accent(category.type);
 
-    return InkWell(
-      onTap: onRename,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryEmerald.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                CategoryIcons.getIcon(category.iconKey),
-                size: 20,
-                color: AppTheme.primaryEmerald,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                category.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
+    return Material(
+      color: theme.cardColor,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: scheme.outlineVariant.withValues(alpha: isDark ? 0.3 : 0.5),
+        ),
+      ),
+      child: InkWell(
+        onTap: onRename,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 4, 10),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  CategoryIcons.getIcon(category.iconKey),
+                  size: 22,
+                  color: accent,
                 ),
               ),
-            ),
-            PopupMenuButton<String>(
-              tooltip: _S.actions,
-              icon: Icon(
-                Icons.more_vert_rounded,
-                color: scheme.onSurfaceVariant,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  category.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15.5,
+                  ),
+                ),
               ),
-              onSelected: (action) {
-                if (action == 'rename') onRename();
-                if (action == 'archive') onArchive();
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'rename', child: Text(_S.rename)),
-                PopupMenuItem(value: 'archive', child: Text(_S.archive)),
-              ],
-            ),
-          ],
+              PopupMenuButton<String>(
+                tooltip: _S.actions,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                icon: Icon(
+                  Icons.more_vert_rounded,
+                  color: scheme.onSurfaceVariant,
+                ),
+                onSelected: (action) {
+                  if (action == 'rename') onRename();
+                  if (action == 'archive') onArchive();
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'rename', child: Text(_S.rename)),
+                  PopupMenuItem(value: 'archive', child: Text(_S.archive)),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Empty and error states
+// ---------------------------------------------------------------------------
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.isIncome, required this.onAdd});
@@ -347,6 +501,7 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final accent = isIncome ? AppTheme.incomeGreen : AppTheme.primaryEmerald;
 
     return Center(
       child: Padding(
@@ -355,17 +510,13 @@ class _EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: 72,
+              height: 72,
               decoration: BoxDecoration(
-                color: AppTheme.primaryEmerald.withValues(alpha: 0.1),
+                color: accent.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.category_outlined,
-                size: 30,
-                color: AppTheme.primaryEmerald,
-              ),
+              child: Icon(Icons.category_outlined, size: 32, color: accent),
             ),
             const SizedBox(height: 16),
             Text(
@@ -483,6 +634,10 @@ class _ErrorBanner extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Editor sheet
+// ---------------------------------------------------------------------------
+
 class _CategoryDraft {
   const _CategoryDraft({
     required this.name,
@@ -538,6 +693,7 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final accent = _accent(_type);
 
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
@@ -549,11 +705,34 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                _isEditing ? _S.renameCategory : _S.newCategory,
-                style: theme.textTheme.titleLarge,
+              Row(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      CategoryIcons.getIcon(_iconKey),
+                      size: 26,
+                      color: accent,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      _isEditing ? _S.renameCategory : _S.newCategory,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _nameController,
                 autofocus: true,
@@ -561,10 +740,12 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.done,
                 onFieldSubmitted: (_) => _submit(),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: _S.nameLabel,
                   hintText: _S.nameHint,
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
                 validator: (value) {
                   final name = value?.trim() ?? '';
@@ -577,27 +758,31 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                 const SizedBox(height: 8),
                 _SectionLabel(_S.typeLabel),
                 const SizedBox(height: 8),
-                SegmentedButton<CategoryType>(
-                  showSelectedIcon: false,
-                  style: SegmentedButton.styleFrom(
-                    minimumSize: const Size(0, 48),
-                  ),
-                  segments: const [
-                    ButtonSegment(
-                      value: CategoryType.expense,
-                      label: Text(_S.expense),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _TypeChoice(
+                        label: _S.expense,
+                        selected: _type == CategoryType.expense,
+                        color: AppTheme.primaryEmerald,
+                        onTap: () =>
+                            setState(() => _type = CategoryType.expense),
+                      ),
                     ),
-                    ButtonSegment(
-                      value: CategoryType.income,
-                      label: Text(_S.income),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _TypeChoice(
+                        label: _S.income,
+                        selected: _type == CategoryType.income,
+                        color: AppTheme.incomeGreen,
+                        onTap: () =>
+                            setState(() => _type = CategoryType.income),
+                      ),
                     ),
                   ],
-                  selected: {_type},
-                  onSelectionChanged: (selection) =>
-                      setState(() => _type = selection.first),
                 ),
               ],
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
               _SectionLabel(_S.iconLabel),
               const SizedBox(height: 10),
               Wrap(
@@ -608,19 +793,78 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                     _IconOption(
                       iconKey: key,
                       selected: key == _iconKey,
+                      color: accent,
                       onTap: () => setState(() => _iconKey = key),
                     ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
               FilledButton(
                 onPressed: _submit,
                 style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(52),
+                  minimumSize: const Size.fromHeight(54),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
                 child: Text(_isEditing ? _S.save : _S.create),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TypeChoice extends StatelessWidget {
+  const _TypeChoice({
+    required this.label,
+    required this.selected,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      excludeSemantics: true,
+      child: Material(
+        color: selected ? color.withValues(alpha: 0.12) : theme.cardColor,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: selected
+                ? color
+                : theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Center(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: selected ? color : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -650,11 +894,13 @@ class _IconOption extends StatelessWidget {
   const _IconOption({
     required this.iconKey,
     required this.selected,
+    required this.color,
     required this.onTap,
   });
 
   final String iconKey;
   final bool selected;
+  final Color color;
   final VoidCallback onTap;
 
   @override
@@ -668,9 +914,7 @@ class _IconOption extends StatelessWidget {
       onTap: onTap,
       excludeSemantics: true,
       child: Material(
-        color: selected
-            ? AppTheme.primaryEmerald
-            : scheme.surfaceContainerHighest,
+        color: selected ? color : scheme.surfaceContainerHighest,
         clipBehavior: Clip.antiAlias,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(

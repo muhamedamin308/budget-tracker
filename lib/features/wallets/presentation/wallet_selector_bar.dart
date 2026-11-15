@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/category_icons.dart';
 import '../../../core/utils/money_format.dart';
 import 'wallet_cubit.dart';
 import 'wallet_form_dialog.dart';
+import 'wallet_icons.dart';
 
 abstract final class _S {
   static const allWallets = 'All wallets';
@@ -25,7 +25,7 @@ class WalletSelectorBar extends StatelessWidget {
         final cubit = context.read<WalletCubit>();
 
         return SizedBox(
-          height: 56,
+          height: 58,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: wallets.length + 2,
@@ -33,7 +33,8 @@ class WalletSelectorBar extends StatelessWidget {
             itemBuilder: (context, index) {
               if (index == 0) {
                 return _WalletPill(
-                  icon: Icons.account_balance_wallet_rounded,
+                  icon: Icons.layers_rounded,
+                  accent: AppTheme.primaryEmerald,
                   name: _S.allWallets,
                   balanceMinor: state.totalBalanceMinor,
                   selected: state.selectedWalletId == null,
@@ -41,23 +42,19 @@ class WalletSelectorBar extends StatelessWidget {
                 );
               }
               if (index == wallets.length + 1) {
-                return Center(
-                  child: IconButton.outlined(
-                    tooltip: _S.addWallet,
-                    onPressed: () => showWalletFormDialog(context),
-                    icon: const Icon(Icons.add_rounded),
-                  ),
-                );
+                return const _AddButton();
               }
 
               final wallet = wallets[index - 1];
               return _WalletPill(
-                icon: CategoryIcons.getIcon(wallet.iconKey),
+                icon: WalletIcons.icon(wallet.iconKey),
+                accent: WalletIcons.color(wallet.iconKey),
                 name: wallet.name,
                 balanceMinor: wallet.balanceMinor ?? 0,
                 selected: state.selectedWalletId == wallet.id,
                 onTap: () => cubit.selectWallet(wallet.id),
-                onLongPress: () => showWalletFormDialog(context, wallet: wallet),
+                onLongPress: () =>
+                    showWalletFormDialog(context, wallet: wallet),
               );
             },
           ),
@@ -67,9 +64,43 @@ class WalletSelectorBar extends StatelessWidget {
   }
 }
 
+class _AddButton extends StatelessWidget {
+  const _AddButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Center(
+      child: Tooltip(
+        message: _S.addWallet,
+        child: Material(
+          color: Colors.transparent,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: scheme.outlineVariant.withValues(alpha: 0.7),
+            ),
+          ),
+          child: InkWell(
+            onTap: () => showWalletFormDialog(context),
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Icon(Icons.add_rounded, color: scheme.onSurfaceVariant),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _WalletPill extends StatelessWidget {
   const _WalletPill({
     required this.icon,
+    required this.accent,
     required this.name,
     required this.balanceMinor,
     required this.selected,
@@ -78,6 +109,7 @@ class _WalletPill extends StatelessWidget {
   });
 
   final IconData icon;
+  final Color accent;
   final String name;
   final int balanceMinor;
   final bool selected;
@@ -89,6 +121,7 @@ class _WalletPill extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isNegative = balanceMinor < 0;
+    final radius = BorderRadius.circular(18);
 
     final nameColor = selected ? Colors.white : scheme.onSurface;
     final balanceColor = selected
@@ -96,8 +129,8 @@ class _WalletPill extends StatelessWidget {
         : (isNegative ? AppTheme.expenseCoral : scheme.onSurfaceVariant);
     final bubbleColor = selected
         ? Colors.white.withValues(alpha: 0.22)
-        : AppTheme.primaryEmerald.withValues(alpha: 0.12);
-    final iconColor = selected ? Colors.white : AppTheme.primaryEmerald;
+        : accent.withValues(alpha: 0.14);
+    final iconColor = selected ? Colors.white : accent;
 
     return Semantics(
       button: true,
@@ -107,66 +140,74 @@ class _WalletPill extends StatelessWidget {
       onLongPress: onLongPress,
       excludeSemantics: true,
       child: Material(
-        color: selected ? AppTheme.primaryEmerald : theme.cardColor,
+        color: Colors.transparent,
+        borderRadius: radius,
         clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: selected
-                ? AppTheme.primaryEmerald
-                : scheme.outlineVariant.withValues(alpha: 0.6),
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: selected ? AppTheme.primaryGradient : null,
+            color: selected ? null : theme.cardColor,
+            borderRadius: radius,
+            border: Border.all(
+              color: selected
+                  ? Colors.transparent
+                  : scheme.outlineVariant.withValues(alpha: 0.6),
+            ),
           ),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          onLongPress: onLongPress,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 190),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: bubbleColor,
-                      shape: BoxShape.circle,
+          child: InkWell(
+            onTap: onTap,
+            onLongPress: onLongPress,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 200),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: bubbleColor,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, size: 18, color: iconColor),
                     ),
-                    child: Icon(icon, size: 16, color: iconColor),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: nameColor,
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: nameColor,
+                            ),
                           ),
-                        ),
-                        Text(
-                          formatMinor(balanceMinor),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: balanceColor,
+                          Text(
+                            formatMinor(balanceMinor),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: balanceColor,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -184,16 +225,16 @@ class _SelectorSkeleton extends StatelessWidget {
     final color = Theme.of(context).colorScheme.surfaceContainerHighest;
 
     return SizedBox(
-      height: 56,
+      height: 58,
       child: Row(
         children: [
           for (var i = 0; i < 3; i++) ...[
             Container(
-              width: 112,
-              height: 48,
+              width: 120,
+              height: 50,
               decoration: BoxDecoration(
                 color: color,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(18),
               ),
             ),
             const SizedBox(width: 8),

@@ -2,25 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/category_icons.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../core/widgets/amount_hero_field.dart';
 import '../domain/wallet_entity.dart';
 import 'wallet_cubit.dart';
 import 'wallet_form_dialog.dart';
+import 'wallet_icons.dart';
 
 abstract final class _S {
   static const title = 'Transfer funds';
+  static const subtitle = 'Move money between your wallets';
   static const from = 'From';
   static const to = 'To';
   static const swap = 'Swap wallets';
   static const noteLabel = 'Note (optional)';
   static const transfer = 'Transfer';
-  static const needTwoWallets = 'Add another wallet to move money between wallets.';
+  static const needTwoWallets =
+      'Add another wallet to move money between wallets.';
   static const addWallet = 'Add wallet';
   static const amountInvalid = 'Enter an amount greater than zero';
   static const pickTwoWallets = 'Pick two different wallets.';
-  static const genericError = 'Could not complete the transfer. Please try again.';
+  static const genericError =
+      'Could not complete the transfer. Please try again.';
 
   static String willGoBelowZero(String name) => '$name will go below zero.';
 }
@@ -32,7 +35,7 @@ Future<void> showTransferFormSheet(BuildContext context, {int? fromWalletId}) {
     useSafeArea: true,
     showDragHandle: true,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
     builder: (_) => BlocProvider.value(
       value: context.read<WalletCubit>(),
@@ -68,7 +71,10 @@ class _TransferFormSheetState extends State<_TransferFormSheet> {
     if (active.isEmpty) return;
 
     final preferred = widget.initialFromWalletId ?? state.selectedWalletId;
-    final from = active.firstWhere((w) => w.id == preferred, orElse: () => active.first);
+    final from = active.firstWhere(
+      (w) => w.id == preferred,
+      orElse: () => active.first,
+    );
     _fromWalletId = from.id;
     _toWalletId = active.where((w) => w.id != from.id).firstOrNull?.id;
   }
@@ -137,15 +143,15 @@ class _TransferFormSheetState extends State<_TransferFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return BlocBuilder<WalletCubit, WalletState>(
       builder: (context, state) {
         final active = state.wallets.where((w) => !w.isArchived).toList();
         final canTransfer = active.length >= 2;
 
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
+          ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: Form(
@@ -154,19 +160,17 @@ class _TransferFormSheetState extends State<_TransferFormSheet> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(_S.title, style: theme.textTheme.titleLarge),
-                  const SizedBox(height: 12),
+                  const _Header(),
+                  const SizedBox(height: 16),
                   if (!canTransfer)
-                    _NeedTwoWallets(
-                      onAdd: () => showWalletFormDialog(context),
-                    )
+                    _NeedTwoWallets(onAdd: () => showWalletFormDialog(context))
                   else ...[
                     AmountHeroField(
                       controller: _amountController,
                       autofocus: true,
                       validator: _validateAmount,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
                     _SectionLabel(_S.from),
                     const SizedBox(height: 8),
                     _WalletChoices(
@@ -175,13 +179,7 @@ class _TransferFormSheetState extends State<_TransferFormSheet> {
                       disabledId: _toWalletId,
                       onSelected: (id) => setState(() => _fromWalletId = id),
                     ),
-                    Center(
-                      child: IconButton(
-                        tooltip: _S.swap,
-                        onPressed: _swap,
-                        icon: const Icon(Icons.swap_vert_rounded),
-                      ),
-                    ),
+                    _SwapRow(onSwap: _swap),
                     _SectionLabel(_S.to),
                     const SizedBox(height: 8),
                     _WalletChoices(
@@ -201,33 +199,35 @@ class _TransferFormSheetState extends State<_TransferFormSheet> {
                       controller: _noteController,
                       textCapitalization: TextCapitalization.sentences,
                       textInputAction: TextInputAction.done,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: _S.noteLabel,
-                        border: OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.notes_rounded),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 12),
-                      Text(
-                        _error ?? '',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.error,
-                        ),
-                      ),
+                      _ErrorNote(message: _error ?? ''),
                     ],
                     const SizedBox(height: 20),
-                    FilledButton(
+                    FilledButton.icon(
                       onPressed: _submitting ? null : _submit,
                       style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(52),
+                        minimumSize: const Size.fromHeight(54),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
-                      child: _submitting
+                      icon: _submitting
                           ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                          : const Text(_S.transfer),
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.swap_horiz_rounded),
+                      label: const Text(_S.transfer),
                     ),
                   ],
                 ],
@@ -236,6 +236,83 @@ class _TransferFormSheetState extends State<_TransferFormSheet> {
           ),
         );
       },
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryEmerald.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(
+            Icons.swap_horiz_rounded,
+            size: 24,
+            color: AppTheme.primaryEmerald,
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _S.title,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                _S.subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SwapRow extends StatelessWidget {
+  const _SwapRow({required this.onSwap});
+
+  final VoidCallback onSwap;
+
+  @override
+  Widget build(BuildContext context) {
+    final line = Theme.of(
+      context,
+    ).colorScheme.outlineVariant.withValues(alpha: 0.5);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: line)),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
+            tooltip: _S.swap,
+            onPressed: onSwap,
+            icon: const Icon(Icons.swap_vert_rounded),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Divider(color: line)),
+        ],
+      ),
     );
   }
 }
@@ -306,6 +383,7 @@ class _WalletOption extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final balance = wallet.balanceMinor ?? 0;
+    final accent = WalletIcons.color(wallet.iconKey);
 
     return Semantics(
       button: true,
@@ -318,11 +396,11 @@ class _WalletOption extends StatelessWidget {
         opacity: enabled ? 1 : 0.4,
         child: Material(
           color: selected
-              ? AppTheme.primaryEmerald.withValues(alpha: 0.12)
+              ? AppTheme.primaryEmerald.withValues(alpha: 0.1)
               : Colors.transparent,
           clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             side: BorderSide(
               width: selected ? 1.5 : 1,
               color: selected
@@ -333,16 +411,22 @@ class _WalletOption extends StatelessWidget {
           child: InkWell(
             onTap: enabled ? onTap : null,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.fromLTRB(8, 8, 14, 8),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    CategoryIcons.getIcon(wallet.iconKey),
-                    size: 20,
-                    color: selected
-                        ? AppTheme.primaryEmerald
-                        : scheme.onSurfaceVariant,
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: Icon(
+                      WalletIcons.icon(wallet.iconKey),
+                      size: 18,
+                      color: accent,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Column(
@@ -359,6 +443,7 @@ class _WalletOption extends StatelessWidget {
                         formatMinor(balance),
                         style: TextStyle(
                           fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
                           color: balance < 0
                               ? AppTheme.expenseCoral
                               : scheme.onSurfaceVariant,
@@ -396,28 +481,74 @@ class _BelowZeroHint extends StatelessWidget {
 
         return Padding(
           padding: const EdgeInsets.only(top: 12),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.warning_amber_rounded,
-                size: 18,
-                color: AppTheme.expenseCoral,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _S.willGoBelowZero(source.name),
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.expenseCoral,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppTheme.expenseCoral.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  size: 18,
+                  color: AppTheme.expenseCoral,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _S.willGoBelowZero(source.name),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.expenseCoral,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
+    );
+  }
+}
+
+class _ErrorNote extends StatelessWidget {
+  const _ErrorNote({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.errorContainer,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.error_outline_rounded,
+            size: 18,
+            color: colors.onErrorContainer,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: colors.onErrorContainer,
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -11,7 +11,6 @@ import 'package:intl/intl.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_format.dart';
-import '../../../core/widgets/app_animations.dart';
 import '../../../core/widgets/entrance_animation.dart';
 import '../../budget/domain/budget_status.dart';
 import '../../budget/presentation/budget_bloc.dart';
@@ -19,14 +18,22 @@ import '../../shell/presentation/month_cubit.dart';
 import '../domain/month_stats.dart';
 import 'stats_bloc.dart';
 
-const List<Color> _categoryPalette = [
-  Color(0xFF0D9373),
+const List<Color> _palette = [
+  Color(0xFF10B981),
   Color(0xFF3B82F6),
   Color(0xFFF59E0B),
   Color(0xFF8B5CF6),
   Color(0xFFEC4899),
-  Color(0xFF06B6D4),
 ];
+const Color _othersColor = Color(0xFF94A3B8);
+
+bool _sameMonth(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month;
+
+String _signed(int minor) {
+  if (minor == 0) return formatMinor(0);
+  return '${minor > 0 ? '+' : '−'}${formatMinor(minor.abs())}';
+}
 
 class StatsPage extends StatelessWidget {
   const StatsPage({super.key});
@@ -48,84 +55,35 @@ class _StatsPageView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return BlocListener<MonthCubit, DateTime>(
       listener: (context, month) =>
           context.read<StatsBloc>().add(MonthChanged(month)),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Financial Analytics',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          'Breakdown of spending & cash flow',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.all(11),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppTheme.infoBlue.withValues(
-                            alpha: isDark ? 0.28 : 0.16,
-                          ),
-                          AppTheme.infoBlue.withValues(
-                            alpha: isDark ? 0.12 : 0.05,
-                          ),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: AppTheme.infoBlue.withValues(
-                          alpha: isDark ? 0.3 : 0.2,
-                        ),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.insights_rounded,
-                      color: AppTheme.infoBlue,
-                      size: 22,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              EntranceAnimation(
-                child: BlocBuilder<MonthCubit, DateTime>(
-                  builder: (context, month) => _MonthSelector(month: month),
+              const SizedBox(height: 8),
+              Text(
+                'Insights',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 2),
+              Text(
+                'Where your money went this month',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 14),
+              BlocBuilder<MonthCubit, DateTime>(
+                builder: (context, month) => _MonthSelector(month: month),
+              ),
+              const SizedBox(height: 14),
               Expanded(
                 child: BlocBuilder<StatsBloc, StatsState>(
                   builder: (context, state) => switch (state) {
@@ -154,6 +112,94 @@ class _StatsPageView extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Building blocks
+// ---------------------------------------------------------------------------
+
+class _Surface extends StatelessWidget {
+  const _Surface({
+    required this.child,
+    this.padding = const EdgeInsets.all(18),
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Material(
+      color: theme.cardColor,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(
+            alpha: isDark ? 0.3 : 0.5,
+          ),
+        ),
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.title, {this.trailing});
+
+  final String title;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          if (trailing != null) trailing!,
+        ],
+      ),
+    );
+  }
+}
+
+class _IconChip extends StatelessWidget {
+  const _IconChip({required this.icon, required this.color, this.size = 38});
+
+  final IconData icon;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(size * 0.32),
+      ),
+      child: Icon(icon, size: size * 0.5, color: color),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Month selector
+// ---------------------------------------------------------------------------
+
 class _MonthSelector extends StatelessWidget {
   const _MonthSelector({required this.month});
 
@@ -161,98 +207,47 @@ class _MonthSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final monthCubit = context.read<MonthCubit>();
+    final cubit = context.read<MonthCubit>();
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : const Color(0xFFE2E8F0),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return _Surface(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       child: Row(
         children: [
           IconButton(
             tooltip: 'Previous month',
-            style: IconButton.styleFrom(
-              padding: const EdgeInsets.all(8),
-              minimumSize: const Size(38, 38),
-            ),
-            onPressed: monthCubit.canGoPrevious ? monthCubit.previous : null,
-            icon: const Icon(Icons.chevron_left_rounded, size: 22),
+            onPressed: cubit.canGoPrevious ? cubit.previous : null,
+            icon: const Icon(Icons.chevron_left_rounded),
           ),
           Expanded(
-            child: Center(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                transitionBuilder: (child, animation) => FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.2),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
-                  ),
-                ),
-                child: Row(
-                  key: ValueKey(month),
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryEmerald.withValues(
-                          alpha: isDark ? 0.22 : 0.1,
-                        ),
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                      child: const Icon(
-                        Icons.calendar_month_rounded,
-                        size: 16,
-                        color: AppTheme.primaryEmerald,
-                      ),
-                    ),
-                    const SizedBox(width: 9),
-                    Text(
-                      DateFormat.yMMMM().format(month),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ],
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: Text(
+                DateFormat.yMMMM().format(month),
+                key: ValueKey(month),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
           ),
           IconButton(
             tooltip: 'Next month',
-            style: IconButton.styleFrom(
-              padding: const EdgeInsets.all(8),
-              minimumSize: const Size(38, 38),
-            ),
-            onPressed: monthCubit.canGoNext ? monthCubit.next : null,
-            icon: const Icon(Icons.chevron_right_rounded, size: 22),
+            onPressed: cubit.canGoNext ? cubit.next : null,
+            icon: const Icon(Icons.chevron_right_rounded),
           ),
         ],
       ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Content
+// ---------------------------------------------------------------------------
 
 class _StatsContent extends StatelessWidget {
   const _StatsContent({required this.monthStats, required this.bucketType});
@@ -262,224 +257,290 @@ class _StatsContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasSpending = monthStats.expenseMinor > 0;
+
     return ListView(
       padding: const EdgeInsets.only(bottom: 40),
       children: [
-        EntranceAnimation(child: _Summary(monthStats: monthStats)),
-        const SizedBox(height: 12),
+        EntranceAnimation(child: _HeroCard(stats: monthStats)),
+        const SizedBox(height: 14),
         EntranceAnimation(
-          delay: const Duration(milliseconds: 60),
-          child: _BudgetProgress(month: monthStats.month),
+          delay: const Duration(milliseconds: 50),
+          child: _BudgetCard(month: monthStats.month),
         ),
-        const SizedBox(height: 20),
-        EntranceAnimation(
-          delay: const Duration(milliseconds: 100),
-          child: const _SectionHeader(
-            label: 'SPENDING BY CATEGORY',
-            accent: AppTheme.primaryEmerald,
-          ),
-        ),
-        const SizedBox(height: 10),
-        if (monthStats.expenseMinor == 0)
-          const EntranceAnimation(
-            delay: Duration(milliseconds: 140),
-            child: _EmptySection(
-              icon: Icons.pie_chart_outline_rounded,
-              message: 'No expenses recorded this month.',
-            ),
-          )
-        else
+        if (hasSpending) ...[
+          const SizedBox(height: 14),
           EntranceAnimation(
-            delay: const Duration(milliseconds: 140),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
-                child: Column(
-                  children: [
-                    _DonutChart(monthStats: monthStats),
-                    const SizedBox(height: 18),
-                    const Divider(height: 1),
-                    const SizedBox(height: 12),
-                    _CategoryList(monthStats: monthStats),
-                  ],
-                ),
-              ),
-            ),
+            delay: const Duration(milliseconds: 90),
+            child: _InsightsRow(stats: monthStats),
           ),
-        const SizedBox(height: 22),
+        ],
+        const SizedBox(height: 24),
+        EntranceAnimation(
+          delay: const Duration(milliseconds: 130),
+          child: const _SectionTitle('Where it went'),
+        ),
+        EntranceAnimation(
+          delay: const Duration(milliseconds: 140),
+          child: hasSpending
+              ? _CategoriesCard(stats: monthStats)
+              : const _EmptyCard(
+                  icon: Icons.pie_chart_outline_rounded,
+                  message: 'No expenses recorded this month.',
+                ),
+        ),
+        const SizedBox(height: 24),
         EntranceAnimation(
           delay: const Duration(milliseconds: 180),
-          child: Row(
-            children: [
-              const Expanded(
-                child: _SectionHeader(
-                  label: 'SPENDING TREND',
-                  accent: AppTheme.primaryEmerald,
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                height: 34,
-                child: SegmentedButton<StatsBucketType>(
-                  style: SegmentedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    textStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.1,
-                    ),
-                  ),
-                  segments: const [
-                    ButtonSegment(
-                      value: StatsBucketType.daily,
-                      label: Text('Daily'),
-                    ),
-                    ButtonSegment(
-                      value: StatsBucketType.weekly,
-                      label: Text('Weekly'),
-                    ),
-                  ],
-                  selected: {bucketType},
-                  onSelectionChanged: (selection) => context
-                      .read<StatsBloc>()
-                      .add(BucketToggled(selection.first)),
-                ),
-              ),
-            ],
+          child: _SectionTitle(
+            'Spending trend',
+            trailing: _BucketToggle(
+              value: bucketType,
+              onChanged: (type) =>
+                  context.read<StatsBloc>().add(BucketToggled(type)),
+            ),
           ),
         ),
-        const SizedBox(height: 10),
-        if (monthStats.expenseMinor == 0)
-          const EntranceAnimation(
-            delay: Duration(milliseconds: 220),
-            child: _EmptySection(
-              icon: Icons.bar_chart_rounded,
-              message: 'No spending trend to chart for this month.',
-            ),
-          )
-        else
-          EntranceAnimation(
-            delay: const Duration(milliseconds: 220),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 18, 14, 12),
-                child: _SpendingBarChart(
+        EntranceAnimation(
+          delay: const Duration(milliseconds: 190),
+          child: hasSpending
+              ? _TrendCard(
                   buckets: bucketType == StatsBucketType.daily
                       ? monthStats.dailyBuckets
                       : monthStats.weeklyBuckets,
                   bucketType: bucketType,
+                )
+              : const _EmptyCard(
+                  icon: Icons.show_chart_rounded,
+                  message: 'No spending trend to chart.',
                 ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label, required this.accent});
-
-  final String label;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Container(
-          width: 3,
-          height: 12,
-          decoration: BoxDecoration(
-            color: accent,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.0,
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.85),
-          ),
         ),
       ],
     );
   }
 }
 
-class _Summary extends StatelessWidget {
-  const _Summary({required this.monthStats});
+// ---------------------------------------------------------------------------
+// Hero: net cash flow
+// ---------------------------------------------------------------------------
 
-  final MonthStats monthStats;
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({required this.stats});
+
+  final MonthStats stats;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final net = stats.netMinor;
+    final isNegative = net < 0;
+    final income = stats.incomeMinor;
+    final expense = stats.expenseMinor;
+    final total = income + expense;
+    final glow = isNegative ? AppTheme.expenseCoral : AppTheme.primaryEmerald;
+
+    String? chip;
+    if (income > 0) {
+      chip = net >= 0 ? 'Saved ${(net / income * 100).round()}%' : 'Overspent';
+    }
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         gradient: isDark
-            ? const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-              )
-            : const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFF0FDF9), Color(0xFFFFFFFF)],
-              ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : const Color(0xFFE2E8F0),
-        ),
+            ? AppTheme.darkCardGradient
+            : isNegative
+            ? AppTheme.expenseGradient
+            : AppTheme.primaryGradient,
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.45)
+                : glow.withValues(alpha: 0.3),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -36,
+            top: -44,
+            child: _Orb(size: 150, alpha: isDark ? 0.05 : 0.09),
+          ),
+          Positioned(
+            right: 60,
+            bottom: -60,
+            child: _Orb(size: 110, alpha: isDark ? 0.04 : 0.07),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Net cash flow',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.85),
+                        ),
+                      ),
+                    ),
+                    if (chip != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          chip,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _signed(net),
+                    style: const TextStyle(
+                      fontSize: 38,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -1.1,
+                      height: 1.05,
+                    ),
+                  ),
+                ),
+                if (total > 0) ...[
+                  const SizedBox(height: 16),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: SizedBox(
+                      height: 8,
+                      child: Row(
+                        children: [
+                          if (income > 0)
+                            Expanded(
+                              flex: income,
+                              child: Container(color: Colors.white),
+                            ),
+                          if (income > 0 && expense > 0)
+                            const SizedBox(width: 3),
+                          if (expense > 0)
+                            Expanded(
+                              flex: expense,
+                              child: Container(
+                                color: Colors.white.withValues(alpha: 0.35),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _FlowStat(
+                        icon: Icons.south_west_rounded,
+                        label: 'Income',
+                        amount: income,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _FlowStat(
+                        icon: Icons.north_east_rounded,
+                        label: 'Expenses',
+                        amount: expense,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FlowStat extends StatelessWidget {
+  const _FlowStat({
+    required this.icon,
+    required this.label,
+    required this.amount,
+  });
+
+  final IconData icon;
+  final String label;
+  final int amount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
-          Expanded(
-            child: _SummaryMetric(
-              label: 'Income',
-              amount: monthStats.incomeMinor,
-              color: AppTheme.incomeGreen,
-              icon: Icons.arrow_downward_rounded,
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.22),
             ),
+            child: Icon(icon, size: 16, color: Colors.white),
           ),
-          _SummaryDivider(isDark: isDark),
+          const SizedBox(width: 8),
           Expanded(
-            child: _SummaryMetric(
-              label: 'Expenses',
-              amount: monthStats.expenseMinor,
-              color: AppTheme.expenseCoral,
-              icon: Icons.arrow_upward_rounded,
-            ),
-          ),
-          _SummaryDivider(isDark: isDark),
-          Expanded(
-            child: _SummaryMetric(
-              label: 'Net Cash',
-              amount: monthStats.netMinor,
-              color: monthStats.netMinor < 0
-                  ? AppTheme.expenseCoral
-                  : AppTheme.incomeGreen,
-              icon: monthStats.netMinor < 0
-                  ? Icons.trending_down_rounded
-                  : Icons.trending_up_rounded,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.8),
+                  ),
+                ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    formatMinor(amount),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -488,86 +549,31 @@ class _Summary extends StatelessWidget {
   }
 }
 
-class _SummaryDivider extends StatelessWidget {
-  const _SummaryDivider({required this.isDark});
+class _Orb extends StatelessWidget {
+  const _Orb({required this.size, required this.alpha});
 
-  final bool isDark;
+  final double size;
+  final double alpha;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 46,
-      width: 1,
-      color: isDark
-          ? Colors.white.withValues(alpha: 0.08)
-          : const Color(0xFFE2E8F0),
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: alpha),
+      ),
     );
   }
 }
 
-class _SummaryMetric extends StatelessWidget {
-  const _SummaryMetric({
-    required this.label,
-    required this.amount,
-    required this.color,
-    required this.icon,
-  });
+// ---------------------------------------------------------------------------
+// Budget ring
+// ---------------------------------------------------------------------------
 
-  final String label;
-  final int amount;
-  final Color color;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: isDark ? 0.2 : 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 12, color: color),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                  letterSpacing: 0.1,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            formatMinor(amount),
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-              letterSpacing: -0.4,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _BudgetProgress extends StatelessWidget {
-  const _BudgetProgress({required this.month});
+class _BudgetCard extends StatelessWidget {
+  const _BudgetCard({required this.month});
 
   final DateTime month;
 
@@ -575,10 +581,10 @@ class _BudgetProgress extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<BudgetBloc, BudgetState>(
       builder: (context, state) => switch (state) {
-        BudgetLoading() => const LinearProgressIndicator(),
-        BudgetError(:final month) when _sameMonth(month, this.month) => Card(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        BudgetLoading() => const _BudgetSkeleton(),
+        BudgetError(:final month) when _sameMonth(month, this.month) =>
+          _Surface(
+            padding: const EdgeInsets.fromLTRB(18, 8, 8, 8),
             child: Row(
               children: [
                 const Expanded(child: Text('Could not load the budget.')),
@@ -587,15 +593,14 @@ class _BudgetProgress extends StatelessWidget {
                   onPressed: () => context.read<BudgetBloc>().add(
                     const BudgetRetryRequested(),
                   ),
-                  icon: const Icon(Icons.refresh),
+                  icon: const Icon(Icons.refresh_rounded),
                 ),
               ],
             ),
           ),
-        ),
-        BudgetError() => const LinearProgressIndicator(),
+        BudgetError() => const _BudgetSkeleton(),
         BudgetLoaded(:final month) when !_sameMonth(month, this.month) =>
-          const LinearProgressIndicator(),
+          const _BudgetSkeleton(),
         BudgetLoaded(:final status) => _buildStatus(context, status),
       },
     );
@@ -603,221 +608,143 @@ class _BudgetProgress extends StatelessWidget {
 
   Widget _buildStatus(BuildContext context, BudgetStatus status) {
     final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
+    final scheme = theme.colorScheme;
 
     if (status.level == BudgetLevel.notSet) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(9),
-                decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: Icon(
-                  Icons.account_balance_wallet_outlined,
-                  color: colors.primary,
-                  size: 20,
-                ),
+      return _Surface(
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+        child: Row(
+          children: [
+            const _IconChip(
+              icon: Icons.speed_rounded,
+              color: AppTheme.primaryEmerald,
+              size: 42,
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'No monthly budget set',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
               ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'No monthly budget set',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-              ),
-              TextButton(
-                onPressed: () => context.go('/settings'),
-                child: const Text('Set limit'),
-              ),
-            ],
-          ),
+            ),
+            FilledButton.tonal(
+              onPressed: () => context.go('/settings'),
+              child: const Text('Set limit'),
+            ),
+          ],
         ),
       );
     }
 
-    final statusColor = switch (status.level) {
+    final color = switch (status.level) {
       BudgetLevel.exceeded => AppTheme.expenseCoral,
       BudgetLevel.warning => AppTheme.warningAmber,
-      _ => AppTheme.incomeGreen,
+      _ => AppTheme.primaryEmerald,
+    };
+    final limit = status.limitMinor ?? 0;
+    final remaining = status.remainingMinor;
+    final percent = (status.progress * 100).round();
+    final statusLabel = switch (status.level) {
+      BudgetLevel.exceeded => 'Over budget',
+      BudgetLevel.warning => 'Close to limit',
+      _ => 'On track',
     };
 
-    final percentage = (status.progress * 100).round();
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return _Surface(
+      child: Row(
+        children: [
+          SizedBox(
+            width: 92,
+            height: 92,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: isDark ? 0.22 : 0.12),
-                    borderRadius: BorderRadius.circular(9),
+                TweenAnimationBuilder<double>(
+                  tween: Tween(
+                    begin: 0,
+                    end: status.progress.clamp(0.0, 1.0).toDouble(),
                   ),
-                  child: Icon(
-                    Icons.speed_rounded,
-                    size: 15,
-                    color: statusColor,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Budget Utilization',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.2,
+                  duration: const Duration(milliseconds: 700),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, _) => SizedBox.expand(
+                    child: CircularProgressIndicator(
+                      value: value,
+                      strokeWidth: 10,
+                      strokeCap: StrokeCap.round,
+                      color: color,
+                      backgroundColor: color.withValues(alpha: 0.15),
                     ),
                   ),
                 ),
+                Text(
+                  '$percent%',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 9,
-                    vertical: 4,
+                    vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: isDark ? 0.25 : 0.12),
-                    borderRadius: BorderRadius.circular(11),
+                    color: color.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    '$percentage%',
+                    statusLabel,
                     style: TextStyle(
-                      color: statusColor,
-                      fontSize: 12,
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 0.1,
+                      color: color,
                     ),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      style: theme.textTheme.bodyMedium,
-                      children: [
-                        TextSpan(
-                          text: formatMinor(status.spentMinor),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: null,
-                          ),
-                        ),
-                        TextSpan(
-                          text: ' of ${formatMinor(status.limitMinor!)}',
-                          style: TextStyle(color: colors.onSurfaceVariant),
-                        ),
-                      ],
+                const SizedBox(height: 8),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    formatMinor(status.spentMinor),
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ),
-                if (status.remainingMinor != null)
+                Text(
+                  'of ${formatMinor(limit)} budget',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                if (remaining != null) ...[
+                  const SizedBox(height: 4),
                   Text(
-                    status.remainingMinor! >= 0
-                        ? '${formatMinor(status.remainingMinor!)} left'
-                        : '${formatMinor(status.remainingMinor!.abs())} over',
+                    remaining >= 0
+                        ? '${formatMinor(remaining)} left'
+                        : '${formatMinor(remaining.abs())} over',
                     style: TextStyle(
-                      color: statusColor,
-                      fontSize: 12,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.w700,
+                      color: color,
                     ),
                   ),
+                ],
               ],
             ),
-            const SizedBox(height: 10),
-            AnimatedGradientProgressBar(
-              progress: status.progress,
-              color: statusColor,
-              height: 8,
-              borderRadius: 6,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DonutChart extends StatelessWidget {
-  const _DonutChart({required this.monthStats});
-
-  final MonthStats monthStats;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final topCategories = monthStats.byCategory.take(5).toList();
-    final otherAmount = monthStats.byCategory
-        .skip(5)
-        .fold<int>(0, (total, category) => total + category.amountMinor);
-
-    final sections = [
-      for (var index = 0; index < topCategories.length; index++)
-        PieChartSectionData(
-          value: topCategories[index].amountMinor.toDouble(),
-          color: _categoryPalette[index % _categoryPalette.length],
-          radius: 30,
-          showTitle: false,
-        ),
-      if (otherAmount > 0)
-        PieChartSectionData(
-          value: otherAmount.toDouble(),
-          color: const Color(0xFF94A3B8),
-          radius: 30,
-          showTitle: false,
-        ),
-    ];
-
-    return SizedBox(
-      height: 210,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          PieChart(
-            PieChartData(
-              sections: sections,
-              centerSpaceRadius: 68,
-              sectionsSpace: 4,
-              startDegreeOffset: -90,
-            ),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'TOTAL SPENT',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.0,
-                  color: theme.colorScheme.onSurfaceVariant.withValues(
-                    alpha: 0.75,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                formatMinor(monthStats.expenseMinor),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -825,110 +752,359 @@ class _DonutChart extends StatelessWidget {
   }
 }
 
-class _CategoryList extends StatelessWidget {
-  const _CategoryList({required this.monthStats});
-
-  final MonthStats monthStats;
+class _BudgetSkeleton extends StatelessWidget {
+  const _BudgetSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (var index = 0; index < monthStats.byCategory.length; index++)
-          _CategoryRow(
-            category: monthStats.byCategory[index],
-            percentage:
-                monthStats.byCategory[index].amountMinor /
-                monthStats.expenseMinor *
-                100,
-            color: index < 5
-                ? _categoryPalette[index % _categoryPalette.length]
-                : const Color(0xFF94A3B8),
+    return Container(
+      height: 128,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(24),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Quick insights
+// ---------------------------------------------------------------------------
+
+class _InsightsRow extends StatelessWidget {
+  const _InsightsRow({required this.stats});
+
+  final MonthStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final daily = stats.dailyBuckets;
+    final avg = daily.isEmpty ? 0 : stats.expenseMinor ~/ daily.length;
+    final peak = daily.isEmpty
+        ? null
+        : daily.reduce((a, b) => a.amountMinor >= b.amountMinor ? a : b);
+    final top = stats.byCategory.isEmpty ? null : stats.byCategory.first;
+    final topShare = top == null
+        ? 0
+        : (top.amountMinor / stats.expenseMinor * 100).round();
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _InsightTile(
+              icon: Icons.calendar_view_day_rounded,
+              color: AppTheme.infoBlue,
+              label: 'Daily avg',
+              value: formatMinor(avg),
+              sub: 'per day',
+            ),
           ),
-      ],
+          const SizedBox(width: 10),
+          Expanded(
+            child: _InsightTile(
+              icon: Icons.bolt_rounded,
+              color: AppTheme.warningAmber,
+              label: 'Peak day',
+              value: peak == null ? '—' : formatMinor(peak.amountMinor),
+              sub: peak == null ? '' : DateFormat.MMMd().format(peak.start),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _InsightTile(
+              icon: Icons.local_fire_department_rounded,
+              color: AppTheme.expenseCoral,
+              label: 'Top category',
+              value: top?.name ?? '—',
+              sub: top == null ? '' : '$topShare% of spend',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InsightTile extends StatelessWidget {
+  const _InsightTile({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.value,
+    required this.sub,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String value;
+  final String sub;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return _Surface(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _IconChip(icon: icon, color: color, size: 32),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+          if (sub.isNotEmpty)
+            Text(
+              sub,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Categories: stacked share bar + ranked rows
+// ---------------------------------------------------------------------------
+
+class _CategoriesCard extends StatelessWidget {
+  const _CategoriesCard({required this.stats});
+
+  final MonthStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = stats.expenseMinor;
+    final top = stats.byCategory.take(5).toList();
+    final othersAmount = stats.byCategory
+        .skip(5)
+        .fold<int>(0, (sum, c) => sum + c.amountMinor);
+
+    final entries = <({String name, int amount, Color color})>[
+      for (var i = 0; i < top.length; i++)
+        (
+          name: top[i].name,
+          amount: top[i].amountMinor,
+          color: _palette[i % _palette.length],
+        ),
+      if (othersAmount > 0)
+        (name: 'Others', amount: othersAmount, color: _othersColor),
+    ];
+
+    return _Surface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Total spent',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        formatMinor(total),
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.7,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '${stats.byCategory.length} categories',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              height: 14,
+              child: Row(
+                children: [
+                  for (var i = 0; i < entries.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 3),
+                    Expanded(
+                      flex: math.max(1, entries[i].amount),
+                      child: Container(color: entries[i].color),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          for (var i = 0; i < entries.length; i++)
+            _CategoryRow(
+              rank: i + 1,
+              name: entries[i].name,
+              amount: entries[i].amount,
+              share: entries[i].amount / total,
+              color: entries[i].color,
+            ),
+        ],
+      ),
     );
   }
 }
 
 class _CategoryRow extends StatelessWidget {
   const _CategoryRow({
-    required this.category,
-    required this.percentage,
+    required this.rank,
+    required this.name,
+    required this.amount,
+    required this.share,
     required this.color,
   });
 
-  final CategorySpending category;
-  final double percentage;
+  final int rank;
+  final String name;
+  final int amount;
+  final double share;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final scheme = Theme.of(context).colorScheme;
+    final initial = name.isEmpty ? '?' : name.characters.first.toUpperCase();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 9),
-      child: Column(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.45),
-                      blurRadius: 5,
-                      offset: const Offset(0, 1),
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              initial,
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+                color: color,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      formatMinor(amount),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13.5,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Text(
-                  category.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    letterSpacing: -0.1,
-                  ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween(
+                            begin: 0,
+                            end: share.clamp(0.0, 1.0).toDouble(),
+                          ),
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, _) =>
+                              LinearProgressIndicator(
+                                value: value,
+                                minHeight: 6,
+                                color: color,
+                                backgroundColor: color.withValues(alpha: 0.12),
+                              ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 40,
+                      child: Text(
+                        '${(share * 100).toStringAsFixed(0)}%',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: isDark ? 0.2 : 0.12),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Text(
-                  '${percentage.toStringAsFixed(1)}%',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 11.5,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                formatMinor(category.amountMinor),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13.5,
-                  letterSpacing: -0.1,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          AnimatedGradientProgressBar(
-            progress: (percentage / 100).clamp(0.0, 1.0),
-            color: color,
-            height: 6,
-            borderRadius: 4,
+              ],
+            ),
           ),
         ],
       ),
@@ -936,101 +1112,184 @@ class _CategoryRow extends StatelessWidget {
   }
 }
 
-class _SpendingBarChart extends StatelessWidget {
-  const _SpendingBarChart({required this.buckets, required this.bucketType});
+// ---------------------------------------------------------------------------
+// Trend: area line chart
+// ---------------------------------------------------------------------------
+
+class _BucketToggle extends StatelessWidget {
+  const _BucketToggle({required this.value, required this.onChanged});
+
+  final StatsBucketType value;
+  final ValueChanged<StatsBucketType> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    Widget pill(StatsBucketType type, String label) {
+      final selected = value == type;
+      return GestureDetector(
+        onTap: () => onChanged(type),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected ? AppTheme.primaryEmerald : Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: selected ? Colors.white : scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          pill(StatsBucketType.daily, 'Daily'),
+          pill(StatsBucketType.weekly, 'Weekly'),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrendCard extends StatelessWidget {
+  const _TrendCard({required this.buckets, required this.bucketType});
 
   final List<SpendingBucket> buckets;
   final StatsBucketType bucketType;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDaily = bucketType == StatsBucketType.daily;
+
     final maxAmount = buckets.fold<int>(
       0,
-      (maximum, bucket) => math.max(maximum, bucket.amountMinor),
+      (m, b) => math.max(m, b.amountMinor),
     );
-    final maxY = maxAmount == 0 ? 1.0 : maxAmount * 1.15;
-    final interval = bucketType == StatsBucketType.daily ? 4 : 1;
-    final chartWidth = math.max(300.0, buckets.length * 36.0).toDouble();
+    final maxY = maxAmount == 0 ? 1.0 : maxAmount * 1.2;
+    final labelEvery = isDaily ? 5 : 1;
 
-    return SizedBox(
-      height: 220,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SizedBox(
-          width: chartWidth,
-          child: BarChart(
-            BarChartData(
-              maxY: maxY,
-              alignment: BarChartAlignment.spaceAround,
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                horizontalInterval: maxY > 4 ? maxY / 4 : 1,
-                getDrawingHorizontalLine: (value) => FlLine(
-                  color: Colors.grey.withValues(alpha: 0.15),
-                  strokeWidth: 1,
-                  dashArray: [4, 4],
-                ),
+    final line = LineChartBarData(
+      spots: [
+        for (var i = 0; i < buckets.length; i++)
+          FlSpot(i.toDouble(), buckets[i].amountMinor.toDouble()),
+      ],
+      isCurved: true,
+      preventCurveOverShooting: true,
+      curveSmoothness: 0.25,
+      barWidth: 3,
+      color: AppTheme.primaryEmerald,
+      isStrokeCapRound: true,
+      dotData: FlDotData(show: buckets.length <= 8),
+      belowBarData: BarAreaData(
+        show: true,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppTheme.primaryEmerald.withValues(alpha: 0.32),
+            AppTheme.primaryEmerald.withValues(alpha: 0.0),
+          ],
+        ),
+      ),
+    );
+
+    return _Surface(
+      padding: const EdgeInsets.fromLTRB(10, 18, 18, 10),
+      child: SizedBox(
+        height: 220,
+        child: LineChart(
+          LineChartData(
+            minY: 0,
+            maxY: maxY,
+            minX: 0,
+            maxX: math.max(1, buckets.length - 1).toDouble(),
+            gridData: FlGridData(
+              drawVerticalLine: false,
+              horizontalInterval: maxY / 4,
+              getDrawingHorizontalLine: (_) => FlLine(
+                color: scheme.outlineVariant.withValues(alpha: 0.4),
+                strokeWidth: 1,
+                dashArray: [4, 4],
               ),
-              borderData: FlBorderData(show: false),
-              titlesData: FlTitlesData(
-                leftTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 28,
-                    getTitlesWidget: (value, meta) {
-                      final index = value.toInt();
-                      if (index < 0 ||
-                          index >= buckets.length ||
-                          index % interval != 0) {
-                        return const SizedBox.shrink();
-                      }
-                      final date = buckets[index].start;
-                      final label = bucketType == StatsBucketType.daily
-                          ? date.day.toString()
-                          : DateFormat.MMMd().format(date);
-                      return SideTitleWidget(
-                        meta: meta,
-                        child: Text(
-                          label,
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+            ),
+            borderData: FlBorderData(show: false),
+            titlesData: FlTitlesData(
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
               ),
-              barGroups: [
-                for (var index = 0; index < buckets.length; index++)
-                  BarChartGroupData(
-                    x: index,
-                    barRods: [
-                      BarChartRodData(
-                        toY: buckets[index].amountMinor.toDouble(),
-                        gradient: const LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [Color(0xFF0D9373), Color(0xFF2DD4BF)],
-                        ),
-                        width: bucketType == StatsBucketType.daily ? 12 : 24,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(6),
+              rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              leftTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 28,
+                  interval: 1,
+                  getTitlesWidget: (value, meta) {
+                    final i = value.toInt();
+                    if (value != i.toDouble() ||
+                        i < 0 ||
+                        i >= buckets.length ||
+                        i % labelEvery != 0) {
+                      return const SizedBox.shrink();
+                    }
+                    final date = buckets[i].start;
+                    return SideTitleWidget(
+                      meta: meta,
+                      child: Text(
+                        isDaily
+                            ? date.day.toString()
+                            : DateFormat.MMMd().format(date),
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onSurfaceVariant,
                         ),
                       ),
-                    ],
-                  ),
-              ],
+                    );
+                  },
+                ),
+              ),
             ),
+            lineTouchData: LineTouchData(
+              touchTooltipData: LineTouchTooltipData(
+                getTooltipColor: (_) => scheme.inverseSurface,
+                getTooltipItems: (spots) => [
+                  for (final spot in spots)
+                    LineTooltipItem(
+                      '${DateFormat.MMMd().format(buckets[spot.x.toInt()].start)}\n'
+                      '${formatMinor(buckets[spot.x.toInt()].amountMinor)}',
+                      TextStyle(
+                        color: scheme.onInverseSurface,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            lineBarsData: [line],
           ),
         ),
       ),
@@ -1038,8 +1297,12 @@ class _SpendingBarChart extends StatelessWidget {
   }
 }
 
-class _EmptySection extends StatelessWidget {
-  const _EmptySection({required this.icon, required this.message});
+// ---------------------------------------------------------------------------
+// Empty and error states
+// ---------------------------------------------------------------------------
+
+class _EmptyCard extends StatelessWidget {
+  const _EmptyCard({required this.icon, required this.message});
 
   final IconData icon;
   final String message;
@@ -1047,34 +1310,31 @@ class _EmptySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
-        child: Center(
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryEmerald.withValues(
-                    alpha: isDark ? 0.12 : 0.08,
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 46, color: AppTheme.primaryEmerald),
+    return _Surface(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      child: Center(
+        child: Column(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryEmerald.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
               ),
-              const SizedBox(height: 16),
-              Text(
-                message,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
+              child: Icon(icon, size: 30, color: AppTheme.primaryEmerald),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -1090,59 +1350,30 @@ class _RetryView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : const Color(0xFFE2E8F0),
-              ),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(
-                      alpha: isDark ? 0.12 : 0.08,
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.cloud_off_rounded,
-                    size: 32,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 20),
-                OutlinedButton.icon(
-                  onPressed: onRetry,
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text('Retry'),
-                ),
-              ],
-            ),
+          Icon(
+            Icons.cloud_off_rounded,
+            size: 40,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Retry'),
           ),
         ],
       ),
     );
   }
 }
-
-bool _sameMonth(DateTime first, DateTime second) =>
-    first.year == second.year && first.month == second.month;

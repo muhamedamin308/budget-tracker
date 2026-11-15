@@ -614,14 +614,19 @@ class _MonthBarDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     final outline = Theme.of(context).colorScheme.outlineVariant;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: background,
-        border: overlapsContent
-            ? Border(bottom: BorderSide(color: outline.withValues(alpha: 0.5)))
-            : null,
+    return SizedBox(
+      height: 56,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: background,
+          border: overlapsContent
+              ? Border(
+                  bottom: BorderSide(color: outline.withValues(alpha: 0.5)),
+                )
+              : null,
+        ),
+        child: const _MonthBar(),
       ),
-      child: const _MonthBar(),
     );
   }
 
@@ -659,8 +664,12 @@ class _MonthBar extends StatelessWidget {
             onPressed: () => context.read<MonthCubit>().next(),
             icon: const Icon(Icons.chevron_right_rounded),
           ),
-          const Spacer(),
-          const _MonthSpent(),
+          const Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _MonthSpent(),
+            ),
+          ),
         ],
       ),
     );

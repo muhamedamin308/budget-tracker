@@ -19,6 +19,7 @@ import 'package:budget_tracker/core/database/daos/wallet_dao.dart' as _i983;
 import 'package:budget_tracker/core/di/injection.dart' as _i263;
 import 'package:budget_tracker/core/router/app_router.dart' as _i729;
 import 'package:budget_tracker/core/services/widget_sync_service.dart' as _i645;
+import 'package:budget_tracker/core/theme/theme_cubit.dart' as _i65;
 import 'package:budget_tracker/features/budget/data/budget_repository_impl.dart'
     as _i13;
 import 'package:budget_tracker/features/budget/domain/budget_repository.dart'
@@ -106,6 +107,7 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i25.WalletRepository>(
       () => _i328.WalletRepositoryImpl(gh<_i983.WalletDao>()),
     );
+    gh.singleton<_i65.ThemeCubit>(() => _i65.ThemeCubit(gh<_i983.WalletDao>()));
     gh.lazySingleton<_i123.TransactionRepository>(
       () => _i20.TransactionRepositoryImpl(
         gh<_i584.TransactionDao>(),

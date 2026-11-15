@@ -32,21 +32,21 @@ class WalletState extends Equatable {
 
   WalletState copyWith({
     List<WalletEntity>? wallets,
-    Object? selectedWalletId = _sentinel,
+    int? Function()? selectedWalletId,
     int? totalBalanceMinor,
     bool? isLoading,
-    Object? errorMessage = _sentinel,
+    String? Function()? errorMessage,
   }) {
     return WalletState(
       wallets: wallets ?? this.wallets,
-      selectedWalletId: selectedWalletId == _sentinel
-          ? this.selectedWalletId
-          : selectedWalletId as int?,
+      selectedWalletId: selectedWalletId != null
+          ? selectedWalletId()
+          : this.selectedWalletId,
       totalBalanceMinor: totalBalanceMinor ?? this.totalBalanceMinor,
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage == _sentinel
-          ? this.errorMessage
-          : errorMessage as String?,
+      errorMessage: errorMessage != null
+          ? errorMessage()
+          : this.errorMessage,
     );
   }
 
@@ -59,8 +59,6 @@ class WalletState extends Equatable {
         errorMessage,
       ];
 }
-
-const Object _sentinel = Object();
 
 @injectable
 class WalletCubit extends Cubit<WalletState> {
