@@ -21,7 +21,8 @@ import '../../wallets/presentation/wallet_selector_bar.dart';
 import '../../wallets/presentation/transfer_form_sheet.dart';
 
 abstract final class _S {
-  static const balance = 'Balance';
+  static const overview = 'Overview';
+  static const balance = 'Total balance';
   static const overdrawn = 'Overdrawn';
   static const belowZero = 'Below zero. Add income or reduce spending.';
   static const income = 'Income';
@@ -37,11 +38,12 @@ abstract final class _S {
   static const today = 'Today';
   static const yesterday = 'Yesterday';
   static const emptyTitle = 'No transactions this month';
-  static const emptyBody = 'Use Income or Expense above to add one.';
+  static const emptyBody = 'Add your first income or expense to get started.';
   static const deleteTitle = 'Delete transaction';
   static const deleteBody = 'Are you sure you want to delete this transaction?';
   static const cancel = 'Cancel';
   static const delete = 'Delete';
+  static const thisMonth = 'This month';
 
   static String spentOf(String spent, String limit) => 'Spent $spent of $limit';
 
@@ -84,7 +86,8 @@ class _HomePageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background = Theme.of(context).scaffoldBackgroundColor;
+    final theme = Theme.of(context);
+    final background = theme.scaffoldBackgroundColor;
 
     return BlocListener<MonthCubit, DateTime>(
       listener: (context, month) =>
@@ -96,17 +99,49 @@ class _HomePageView extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const EntranceAnimation(child: WalletSelectorBar()),
-                    const SizedBox(height: 12),
                     EntranceAnimation(
-                      delay: const Duration(milliseconds: 60),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              DateFormat('EEEE, MMM d').format(DateTime.now()),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              _S.overview,
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const EntranceAnimation(
+                      delay: Duration(milliseconds: 30),
+                      child: WalletSelectorBar(),
+                    ),
+                    const SizedBox(height: 14),
+                    EntranceAnimation(
+                      delay: const Duration(milliseconds: 70),
                       child: _HeroCard(
-                        onAdd: (kind) => _openForm(context, kind),
                         onRetry: () => context.read<BalanceBloc>().add(
                           const BalanceRetryRequested(),
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 14),
+                    EntranceAnimation(
+                      delay: const Duration(milliseconds: 110),
+                      child: const _QuickActions(),
                     ),
                   ],
                 ),
@@ -136,7 +171,10 @@ class _HomePageView extends StatelessWidget {
                   transactions.isEmpty
                       ? SliverFillRemaining(
                           hasScrollBody: false,
-                          child: _EmptyState(errorMessage: errorMessage),
+                          child: _EmptyState(
+                            errorMessage: errorMessage,
+                            onAdd: (kind) => _openForm(context, kind),
+                          ),
                         )
                       : _TransactionsSliver(
                           transactions: transactions,
@@ -155,13 +193,12 @@ class _HomePageView extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Hero card: balance + budget meter + quick actions in one surface
+// Hero card: balance + month flow + budget meter
 // ---------------------------------------------------------------------------
 
 class _HeroCard extends StatelessWidget {
-  const _HeroCard({required this.onAdd, required this.onRetry});
+  const _HeroCard({required this.onRetry});
 
-  final ValueChanged<TransactionKind> onAdd;
   final VoidCallback onRetry;
 
   @override
@@ -175,7 +212,6 @@ class _HeroCard extends StatelessWidget {
           _ => 0,
         };
         final isNegative = balanceMinor < 0;
-        final canAdd = state is BalanceLoaded;
 
         final gradient = isDark
             ? AppTheme.darkCardGradient
@@ -218,7 +254,7 @@ class _HeroCard extends StatelessWidget {
               Material(
                 type: MaterialType.transparency,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -237,7 +273,7 @@ class _HeroCard extends StatelessWidget {
                           if (isNegative) const _OverdrawnBadge(),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                       _AmountView(
                         state: state,
                         balanceMinor: balanceMinor,
@@ -250,38 +286,10 @@ class _HeroCard extends StatelessWidget {
                           text: _S.belowZero,
                         ),
                       ],
+                      const SizedBox(height: 16),
+                      const _MonthFlow(),
                       const SizedBox(height: 14),
                       const _BudgetMeter(),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _HeroAction(
-                              icon: Icons.add_rounded,
-                              label: _S.income,
-                              onTap: canAdd
-                                  ? () => onAdd(TransactionKind.income)
-                                  : null,
-                            ),
-                          ),
-                          Expanded(
-                            child: _HeroAction(
-                              icon: Icons.remove_rounded,
-                              label: _S.expense,
-                              onTap: canAdd
-                                  ? () => onAdd(TransactionKind.expense)
-                                  : null,
-                            ),
-                          ),
-                          Expanded(
-                            child: _HeroAction(
-                              icon: Icons.swap_horiz_rounded,
-                              label: _S.transfer,
-                              onTap: () => showTransferFormSheet(context),
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
@@ -290,6 +298,115 @@ class _HeroCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _MonthFlow extends StatelessWidget {
+  const _MonthFlow();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<TransactionsBloc, TransactionsState>(
+      builder: (context, state) {
+        var income = 0;
+        var expense = 0;
+        if (state is TransactionsLoaded) {
+          for (final t in state.transactions) {
+            if (t.kind == TransactionKind.income) {
+              income += t.amountMinor;
+            } else {
+              expense += t.amountMinor;
+            }
+          }
+        }
+
+        return Row(
+          children: [
+            Expanded(
+              child: _FlowChip(
+                icon: Icons.south_west_rounded,
+                label: _S.income,
+                amount: income,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _FlowChip(
+                icon: Icons.north_east_rounded,
+                label: _S.expense,
+                amount: expense,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _FlowChip extends StatelessWidget {
+  const _FlowChip({
+    required this.icon,
+    required this.label,
+    required this.amount,
+  });
+
+  final IconData icon;
+  final String label;
+  final int amount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.22),
+            ),
+            child: Icon(icon, size: 16, color: Colors.white),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$label · ${_S.thisMonth}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.8),
+                  ),
+                ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    formatMinor(amount),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -358,10 +475,10 @@ class _AmountView extends StatelessWidget {
       child: Text(
         formatMinor(balanceMinor),
         style: const TextStyle(
-          fontSize: 40,
+          fontSize: 42,
           fontWeight: FontWeight.w800,
           color: Colors.white,
-          letterSpacing: -1.2,
+          letterSpacing: -1.3,
           height: 1.05,
         ),
       ),
@@ -450,13 +567,23 @@ class _BudgetMeter extends StatelessWidget {
         final limit = status.limitMinor;
 
         if (limit == null) {
-          return Text(
-            _S.noLimit,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.75),
-            ),
+          return Row(
+            children: [
+              Icon(
+                Icons.speed_rounded,
+                size: 14,
+                color: Colors.white.withValues(alpha: 0.75),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _S.noLimit,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.75),
+                ),
+              ),
+            ],
           );
         }
 
@@ -466,14 +593,12 @@ class _BudgetMeter extends StatelessWidget {
           children: [
             Row(
               children: [
-                if (exceeded) ...[
-                  const Icon(
-                    Icons.warning_rounded,
-                    size: 14,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(width: 4),
-                ],
+                Icon(
+                  exceeded ? Icons.warning_rounded : Icons.speed_rounded,
+                  size: 14,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     exceeded
@@ -495,80 +620,33 @@ class _BudgetMeter extends StatelessWidget {
                   _S.percent(status.progress),
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white.withValues(alpha: 0.85),
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: status.progress.clamp(0.0, 1.0).toDouble(),
-                minHeight: 6,
-                backgroundColor: Colors.white.withValues(alpha: 0.22),
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(
+                  begin: 0,
+                  end: status.progress.clamp(0.0, 1.0).toDouble(),
+                ),
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, _) => LinearProgressIndicator(
+                  value: value,
+                  minHeight: 6,
+                  backgroundColor: Colors.white.withValues(alpha: 0.22),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
               ),
             ),
           ],
         );
       },
-    );
-  }
-}
-
-class _HeroAction extends StatelessWidget {
-  const _HeroAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      enabled: onTap != null,
-      label: label,
-      excludeSemantics: true,
-      child: Opacity(
-        opacity: onTap == null ? 0.5 : 1,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.2),
-                  ),
-                  child: Icon(icon, color: Colors.white),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -593,6 +671,125 @@ class _Orb extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+// Quick actions
+// ---------------------------------------------------------------------------
+
+class _QuickActions extends StatelessWidget {
+  const _QuickActions();
+
+  @override
+  Widget build(BuildContext context) {
+    final canAdd = context.select<BalanceBloc, bool>(
+      (bloc) => bloc.state is BalanceLoaded,
+    );
+
+    return Row(
+      children: [
+        Expanded(
+          child: _ActionCard(
+            icon: Icons.south_west_rounded,
+            label: _S.income,
+            color: AppTheme.incomeGreen,
+            onTap: canAdd
+                ? () => _openForm(context, TransactionKind.income)
+                : null,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _ActionCard(
+            icon: Icons.north_east_rounded,
+            label: _S.expense,
+            color: AppTheme.expenseCoral,
+            onTap: canAdd
+                ? () => _openForm(context, TransactionKind.expense)
+                : null,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _ActionCard(
+            icon: Icons.swap_horiz_rounded,
+            label: _S.transfer,
+            color: AppTheme.infoBlue,
+            onTap: () => showTransferFormSheet(context),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Semantics(
+      button: true,
+      enabled: onTap != null,
+      label: label,
+      excludeSemantics: true,
+      child: Opacity(
+        opacity: onTap == null ? 0.5 : 1,
+        child: Material(
+          color: theme.cardColor,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: theme.colorScheme.outlineVariant.withValues(
+                alpha: isDark ? 0.3 : 0.5,
+              ),
+            ),
+          ),
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Column(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(icon, color: color, size: 22),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Pinned month bar
 // ---------------------------------------------------------------------------
 
@@ -602,10 +799,10 @@ class _MonthBarDelegate extends SliverPersistentHeaderDelegate {
   final Color background;
 
   @override
-  double get minExtent => 56;
+  double get minExtent => 60;
 
   @override
-  double get maxExtent => 56;
+  double get maxExtent => 60;
 
   @override
   Widget build(
@@ -615,7 +812,7 @@ class _MonthBarDelegate extends SliverPersistentHeaderDelegate {
   ) {
     final outline = Theme.of(context).colorScheme.outlineVariant;
     return SizedBox(
-      height: 56,
+      height: 60,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: background,
@@ -641,36 +838,45 @@ class _MonthBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: [
-          IconButton(
-            tooltip: _S.previousMonth,
-            onPressed: () => context.read<MonthCubit>().previous(),
-            icon: const Icon(Icons.chevron_left_rounded),
-          ),
-          BlocBuilder<MonthCubit, DateTime>(
-            builder: (context, month) => Text(
-              DateFormat.yMMMM().format(month),
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            IconButton(
+              tooltip: _S.previousMonth,
+              visualDensity: VisualDensity.compact,
+              onPressed: () => context.read<MonthCubit>().previous(),
+              icon: const Icon(Icons.chevron_left_rounded),
+            ),
+            Flexible(
+              child: BlocBuilder<MonthCubit, DateTime>(
+                builder: (context, month) => Text(
+                  DateFormat.yMMMM().format(month),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
             ),
-          ),
-          IconButton(
-            tooltip: _S.nextMonth,
-            onPressed: () => context.read<MonthCubit>().next(),
-            icon: const Icon(Icons.chevron_right_rounded),
-          ),
-          const Expanded(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: _MonthSpent(),
+            IconButton(
+              tooltip: _S.nextMonth,
+              visualDensity: VisualDensity.compact,
+              onPressed: () => context.read<MonthCubit>().next(),
+              icon: const Icon(Icons.chevron_right_rounded),
             ),
-          ),
-        ],
+            const Spacer(),
+            const _MonthSpent(),
+          ],
+        ),
       ),
     );
   }
@@ -681,7 +887,7 @@ class _MonthSpent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final scheme = Theme.of(context).colorScheme;
 
     return BlocBuilder<TransactionsBloc, TransactionsState>(
       builder: (context, state) {
@@ -689,13 +895,20 @@ class _MonthSpent extends StatelessWidget {
         final spent = state.transactions
             .where((t) => t.kind == TransactionKind.expense)
             .fold<int>(0, (sum, t) => sum + t.amountMinor);
-        return Padding(
-          padding: const EdgeInsets.only(right: 8),
+        return Container(
+          margin: const EdgeInsets.only(right: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: BorderRadius.circular(999),
+          ),
           child: Text(
             _S.monthSpent(formatMinor(spent)),
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 12,
               fontWeight: FontWeight.w700,
+              color: scheme.onSurfaceVariant,
             ),
           ),
         );
@@ -796,23 +1009,47 @@ class _DayGroup extends StatelessWidget {
           sum +
           (t.kind == TransactionKind.income ? t.amountMinor : -t.amountMinor),
     );
-    final labelStyle = theme.textTheme.labelLarge?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w700,
-    );
+    final netColor = net > 0
+        ? AppTheme.incomeGreen
+        : net < 0
+        ? AppTheme.expenseCoral
+        : theme.colorScheme.onSurfaceVariant;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(_dayLabel(day), style: labelStyle),
-                Text(_signed(net), style: labelStyle),
+                Expanded(
+                  child: Text(
+                    _dayLabel(day),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: netColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    _signed(net),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: netColor,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -820,7 +1057,7 @@ class _DayGroup extends StatelessWidget {
             color: theme.cardColor,
             clipBehavior: Clip.antiAlias,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(22),
               side: BorderSide(
                 color: outline.withValues(alpha: isDark ? 0.3 : 0.5),
               ),
@@ -831,7 +1068,7 @@ class _DayGroup extends StatelessWidget {
                   if (i > 0)
                     Divider(
                       height: 1,
-                      indent: 68,
+                      indent: 72,
                       color: outline.withValues(alpha: 0.4),
                     ),
                   _TransactionRow(
@@ -865,14 +1102,34 @@ class _TransactionRow extends StatelessWidget {
         await showDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            icon: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppTheme.expenseCoral.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.delete_rounded,
+                color: AppTheme.expenseCoral,
+                size: 26,
+              ),
+            ),
             title: const Text(_S.deleteTitle),
-            content: const Text(_S.deleteBody),
+            content: const Text(_S.deleteBody, textAlign: TextAlign.center),
+            actionsAlignment: MainAxisAlignment.center,
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
                 child: const Text(_S.cancel),
               ),
               FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.expenseCoral,
+                ),
                 onPressed: () => Navigator.of(dialogContext).pop(true),
                 child: const Text(_S.delete),
               ),
@@ -891,6 +1148,7 @@ class _TransactionRow extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isIncome = transaction.kind == TransactionKind.income;
+    final accent = isIncome ? AppTheme.incomeGreen : AppTheme.expenseCoral;
 
     final rawTitle = transaction.title;
     final hasTitle = rawTitle != null && rawTitle.isNotEmpty;
@@ -904,8 +1162,21 @@ class _TransactionRow extends StatelessWidget {
       background: Container(
         color: AppTheme.expenseCoral,
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete_rounded, color: Colors.white),
+        padding: const EdgeInsets.only(right: 22),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _S.delete,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(width: 8),
+            Icon(Icons.delete_rounded, color: Colors.white),
+          ],
+        ),
       ),
       confirmDismiss: (_) => _confirmAndDelete(context),
       child: InkWell(
@@ -915,20 +1186,16 @@ class _TransactionRow extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: isIncome
-                      ? AppTheme.incomeGreen.withValues(alpha: 0.12)
-                      : scheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
                   CategoryIcons.getIcon(transaction.categoryIconKey),
-                  size: 20,
-                  color: isIncome
-                      ? AppTheme.incomeGreen
-                      : scheme.onSurfaceVariant,
+                  size: 22,
+                  color: accent,
                 ),
               ),
               const SizedBox(width: 14),
@@ -964,6 +1231,7 @@ class _TransactionRow extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 15,
+                  letterSpacing: -0.2,
                   color: isIncome ? AppTheme.incomeGreen : scheme.onSurface,
                 ),
               ),
@@ -980,9 +1248,10 @@ class _TransactionRow extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.errorMessage});
+  const _EmptyState({required this.errorMessage, required this.onAdd});
 
   final String? errorMessage;
+  final ValueChanged<TransactionKind> onAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -1000,31 +1269,50 @@ class _EmptyState extends StatelessWidget {
               const SizedBox(height: 16),
             ],
             Container(
-              width: 56,
-              height: 56,
+              width: 72,
+              height: 72,
               decoration: BoxDecoration(
                 color: AppTheme.primaryEmerald.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.receipt_long_outlined,
-                size: 28,
+                size: 32,
                 color: AppTheme.primaryEmerald,
               ),
             ),
-            const SizedBox(height: 14),
-            const Text(
+            const SizedBox(height: 16),
+            Text(
               _S.emptyTitle,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               _S.emptyBody,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
+              style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
+            ),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              alignment: WrapAlignment.center,
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: () => onAdd(TransactionKind.income),
+                  icon: const Icon(Icons.south_west_rounded, size: 18),
+                  label: const Text(_S.income),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: () => onAdd(TransactionKind.expense),
+                  icon: const Icon(Icons.north_east_rounded, size: 18),
+                  label: const Text(_S.expense),
+                ),
+              ],
             ),
           ],
         ),

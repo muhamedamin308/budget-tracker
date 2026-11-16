@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.net.Uri
+import android.view.View
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
@@ -27,14 +28,15 @@ class BudgetWidgetProvider : HomeWidgetProvider() {
                     false
                 }
                 setTextViewText(R.id.widget_balance_text, balanceText)
-                if (isNegative) {
-                    setTextColor(R.id.widget_balance_text, Color.parseColor("#F43F5E"))
-                } else {
-                    setTextColor(R.id.widget_balance_text, Color.parseColor("#FFFFFF"))
-                }
+                setTextColor(
+                    R.id.widget_balance_text,
+                    Color.parseColor(if (isNegative) "#FB7185" else "#FFFFFF")
+                )
 
-                // Budget Status
-                val budgetStatusText = widgetData.getString("budget_status_text", "Budget: No limit set") ?: "Budget: No limit set"
+                // Budget status
+                val budgetStatusText = widgetData.getString(
+                    "budget_status_text", "Budget: No limit set"
+                ) ?: "Budget: No limit set"
                 val progress = try {
                     widgetData.getInt("budget_progress_percent", 0)
                 } catch (e: ClassCastException) {
@@ -46,10 +48,28 @@ class BudgetWidgetProvider : HomeWidgetProvider() {
                 } catch (e: Exception) {
                     0
                 }
-                setTextViewText(R.id.widget_budget_status_text, budgetStatusText)
-                setProgressBar(R.id.widget_budget_progress, 100, progress.coerceIn(0, 100), false)
+                val over = progress >= 100
+                val clamped = progress.coerceIn(0, 100)
 
-                // PendingIntent: Clicking the container opens the app
+                setTextViewText(R.id.widget_budget_status_text, budgetStatusText)
+                setTextViewText(R.id.widget_budget_percent_text, "$progress%")
+                setTextColor(
+                    R.id.widget_budget_percent_text,
+                    Color.parseColor(if (over) "#FB7185" else "#34D399")
+                )
+
+                setProgressBar(R.id.widget_budget_progress, 100, clamped, false)
+                setProgressBar(R.id.widget_budget_progress_over, 100, clamped, false)
+                setViewVisibility(
+                    R.id.widget_budget_progress,
+                    if (over) View.GONE else View.VISIBLE
+                )
+                setViewVisibility(
+                    R.id.widget_budget_progress_over,
+                    if (over) View.VISIBLE else View.GONE
+                )
+
+                // Tap the card: open the app
                 val homeIntent = HomeWidgetLaunchIntent.getActivity(
                     context,
                     MainActivity::class.java,
@@ -57,7 +77,7 @@ class BudgetWidgetProvider : HomeWidgetProvider() {
                 )
                 setOnClickPendingIntent(R.id.widget_container, homeIntent)
 
-                // PendingIntent: Clicking "+ Expense" opens the app directly to add expense
+                // Tap "+ Expense": open the add-expense form
                 val addExpenseIntent = HomeWidgetLaunchIntent.getActivity(
                     context,
                     MainActivity::class.java,

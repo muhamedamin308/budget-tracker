@@ -7,20 +7,29 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- Top Header & Action Row -->
+    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
+        <LinearLayout
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/widget_dot"
+            android:orientation="horizontal" />
+
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="BUDGET"
-            android:textColor="#34D399"
-            android:textSize="11.5sp"
+            android:letterSpacing="0.1"
+            android:singleLine="true"
+            android:text="BUDGET TRACKER"
+            android:textColor="#94A3B8"
+            android:textSize="10sp"
             android:textStyle="bold" />
 
         <TextView
@@ -28,62 +37,96 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/widget_button_background"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="5dp"
+            android:paddingLeft="12dp"
+            android:paddingTop="6dp"
+            android:paddingRight="12dp"
+            android:paddingBottom="6dp"
             android:text="+ Expense"
             android:textColor="#FFFFFF"
             android:textSize="11.5sp"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- Balance Section -->
+    <!-- Balance -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="TOTAL BALANCE"
+        android:layout_marginTop="12dp"
+        android:text="Total balance"
         android:textColor="#94A3B8"
-        android:textSize="11sp"
-        android:textStyle="bold" />
+        android:textSize="11.5sp" />
 
     <TextView
         android:id="@+id/widget_balance_text"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:singleLine="true"
         android:text="0.00 EGP"
         android:textColor="#FFFFFF"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:singleLine="true" />
+        android:textSize="28sp"
+        android:textStyle="bold" />
 
-    <!-- Divider -->
+    <!-- Spacer pushes the budget block to the bottom when the widget is tall -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp"
-        android:background="#1E293B"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:minHeight="8dp"
         android:orientation="horizontal" />
 
-    <!-- Monthly Budget Status Section -->
-    <TextView
-        android:id="@+id/widget_budget_status_text"
+    <!-- Budget row -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Budget: No limit set"
-        android:textColor="#CBD5E1"
-        android:textSize="11sp"
-        android:singleLine="true" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-    <ProgressBar
-        android:id="@+id/widget_budget_progress"
-        style="@android:style/Widget.ProgressBar.Horizontal"
+        <TextView
+            android:id="@+id/widget_budget_status_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:text="Budget: No limit set"
+            android:textColor="#CBD5E1"
+            android:textSize="11.5sp" />
+
+        <TextView
+            android:id="@+id/widget_budget_percent_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="0%"
+            android:textColor="#34D399"
+            android:textSize="11.5sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="6dp"
-        android:layout_marginTop="6dp"
-        android:max="100"
-        android:progress="0"
-        android:progressDrawable="@drawable/widget_progress_bar" />
+        android:layout_marginTop="6dp">
+
+        <ProgressBar
+            android:id="@+id/widget_budget_progress"
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/widget_progress_bar" />
+
+        <ProgressBar
+            android:id="@+id/widget_budget_progress_over"
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/widget_progress_bar_over"
+            android:visibility="gone" />
+    </FrameLayout>
 
 </LinearLayout>

@@ -270,20 +270,21 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i1004.SetMonthlyLimit>(),
       ),
     );
-    gh.factory<_i888.CategoriesBloc>(
-      () => _i888.CategoriesBloc(
-        gh<_i1061.WatchCategories>(),
-        gh<_i1061.AddCategory>(),
-        gh<_i1061.RenameCategory>(),
-        gh<_i1061.ArchiveCategory>(),
-      ),
-    );
     gh.factory<_i563.TransactionFormCubit>(
       () => _i563.TransactionFormCubit(
         gh<_i601.CategoryRepository>(),
         gh<_i403.AddIncome>(),
         gh<_i403.AddExpense>(),
         gh<_i403.UpdateTransaction>(),
+        gh<_i486.WatchWallets>(),
+      ),
+    );
+    gh.factory<_i888.CategoriesBloc>(
+      () => _i888.CategoriesBloc(
+        gh<_i1061.WatchCategories>(),
+        gh<_i1061.AddCategory>(),
+        gh<_i1061.RenameCategory>(),
+        gh<_i1061.ArchiveCategory>(),
       ),
     );
     return this;

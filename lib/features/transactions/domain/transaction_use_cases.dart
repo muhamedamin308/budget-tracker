@@ -36,6 +36,7 @@ class AddIncome {
   Future<Either<Failure, Unit>> call({
     required int amountMinor,
     required int categoryId,
+    int? walletId,
     required String title,
     DateTime? createdAt,
   }) async {
@@ -45,6 +46,7 @@ class AddIncome {
       categoryId: categoryId,
       title: title.trim(),
       createdAt: createdAt,
+      walletId: walletId,
     );
     final failure = await _validateDraft(draft, _categoryRepository);
     if (failure != null) return Left(failure);
@@ -62,6 +64,7 @@ class AddExpense {
   Future<Either<Failure, Unit>> call({
     required int amountMinor,
     required int categoryId,
+    int? walletId,
     DateTime? createdAt,
   }) async {
     final draft = TransactionDraft(
@@ -69,6 +72,7 @@ class AddExpense {
       amountMinor: amountMinor,
       categoryId: categoryId,
       createdAt: createdAt,
+      walletId: walletId,
     );
     final failure = await _validateDraft(draft, _categoryRepository);
     if (failure != null) return Left(failure);
