@@ -1,7 +1,9 @@
 import 'package:intl/intl.dart';
 
-String formatMinor(int amountMinor) =>
-    '${NumberFormat('#,##0.00', 'en').format(amountMinor / 100)} EGP';
+String formatMinor(int amountMinor, {bool isPrivacy = false}) {
+  if (isPrivacy) return '••••••';
+  return '${NumberFormat('#,##0.00', 'en').format(amountMinor / 100)} EGP';
+}
 
 /// Parses user input ("12", "12.5", "12,05") into piastres. Null when invalid.
 int? parseMinor(String input) {

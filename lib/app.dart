@@ -11,6 +11,9 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_cubit.dart';
 import 'features/recurring/domain/recurring_use_cases.dart';
 import 'features/recurring/presentation/recurring_generation_runner.dart';
+import 'features/security/presentation/lock_screen_overlay.dart';
+import 'features/security/presentation/privacy_cubit.dart';
+import 'features/security/presentation/security_cubit.dart';
 import 'features/transactions/domain/transaction_entity.dart';
 import 'features/transactions/presentation/transaction_form_sheet.dart';
 
@@ -60,7 +63,10 @@ class _BudgetTrackerAppState extends State<BudgetTrackerApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.paused) {
+      getIt<SecurityCubit>().onAppPaused();
+    } else if (state == AppLifecycleState.resumed) {
+      getIt<SecurityCubit>().onAppResumed();
       unawaited(runRecurringGeneration(getIt<GenerateDueRecurring>()));
       unawaited(getIt<WidgetSyncService>().syncNow());
     }
@@ -75,8 +81,12 @@ class _BudgetTrackerAppState extends State<BudgetTrackerApp>
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: getIt<ThemeCubit>(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: getIt<ThemeCubit>()),
+        BlocProvider.value(value: getIt<PrivacyCubit>()),
+        BlocProvider.value(value: getIt<SecurityCubit>()),
+      ],
       child: BlocBuilder<ThemeCubit, ThemeMode>(
         builder: (context, themeMode) {
           return MaterialApp.router(
@@ -86,6 +96,9 @@ class _BudgetTrackerAppState extends State<BudgetTrackerApp>
             themeMode: themeMode,
             routerConfig: getIt<AppRouter>().router,
             debugShowCheckedModeBanner: false,
+            builder: (context, child) {
+              return LockScreenOverlay(child: child ?? const SizedBox.shrink());
+            },
           );
         },
       ),

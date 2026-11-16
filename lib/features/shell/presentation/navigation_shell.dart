@@ -19,7 +19,7 @@ class NavigationShell extends StatelessWidget {
       selectedIcon: Icons.home_rounded,
     ),
     _NavDestination(
-      label: 'Stats',
+      label: 'Insights',
       icon: Icons.insights_outlined,
       selectedIcon: Icons.insights_rounded,
     ),

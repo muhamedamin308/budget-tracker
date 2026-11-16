@@ -19,6 +19,7 @@ import '../../transactions/presentation/balance_bloc.dart';
 import '../../wallets/presentation/wallet_cubit.dart';
 import '../../wallets/presentation/wallet_selector_bar.dart';
 import '../../wallets/presentation/transfer_form_sheet.dart';
+import '../../security/presentation/privacy_cubit.dart';
 
 abstract final class _S {
   static const overview = 'Overview';
@@ -184,7 +185,7 @@ class _HomePageView extends StatelessWidget {
                         ),
               },
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 96)),
+            const SliverToBoxAdapter(child: SizedBox(height: 44)),
           ],
         ),
       ),
@@ -270,7 +271,32 @@ class _HeroCard extends StatelessWidget {
                               letterSpacing: 0.2,
                             ),
                           ),
-                          if (isNegative) const _OverdrawnBadge(),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              BlocBuilder<PrivacyCubit, bool>(
+                                builder: (context, isPrivacy) {
+                                  return IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    iconSize: 20,
+                                    tooltip: isPrivacy ? 'Show balance' : 'Hide balance',
+                                    icon: Icon(
+                                      isPrivacy
+                                          ? Icons.visibility_off_rounded
+                                          : Icons.visibility_rounded,
+                                      color: Colors.white.withValues(alpha: 0.85),
+                                    ),
+                                    onPressed: () => context.read<PrivacyCubit>().toggle(),
+                                  );
+                                },
+                              ),
+                              if (isNegative) ...[
+                                const SizedBox(width: 8),
+                                const _OverdrawnBadge(),
+                              ],
+                            ],
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -469,11 +495,13 @@ class _AmountView extends StatelessWidget {
       );
     }
 
+    final isPrivacy = context.watch<PrivacyCubit>().state;
+
     return FittedBox(
       fit: BoxFit.scaleDown,
       alignment: Alignment.centerLeft,
       child: Text(
-        formatMinor(balanceMinor),
+        formatMinor(balanceMinor, isPrivacy: isPrivacy),
         style: const TextStyle(
           fontSize: 42,
           fontWeight: FontWeight.w800,

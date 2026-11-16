@@ -14,6 +14,8 @@ import '../../budget/presentation/monthly_limit_dialog.dart';
 import '../../recurring/presentation/recurring_rules_page.dart';
 import 'categories_page.dart';
 import 'widget_settings_sheet.dart';
+import '../../security/presentation/security_settings_sheet.dart';
+import '../../security/presentation/privacy_cubit.dart';
 
 abstract final class _S {
   static const title = 'Settings';
@@ -131,6 +133,44 @@ class SettingsPage extends StatelessWidget {
                   title: _S.widget,
                   subtitle: _S.widgetSubtitle,
                   onTap: () => showWidgetSettingsSheet(context),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          EntranceAnimation(
+            delay: const Duration(milliseconds: 140),
+            child: _SettingsGroup(
+              title: 'Data & Privacy',
+              children: [
+                _SettingsTile(
+                  icon: Icons.fingerprint_rounded,
+                  title: 'Biometrics & Security',
+                  subtitle: 'App lock & auto-lock timeout',
+                  onTap: () => showSecuritySettingsSheet(context),
+                ),
+                BlocBuilder<PrivacyCubit, bool>(
+                  builder: (context, isPrivacy) {
+                    return _SettingsTile(
+                      icon: isPrivacy
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
+                      title: 'Privacy Mode (Mask Balances)',
+                      subtitle: isPrivacy ? 'Numbers hidden (••••••)' : 'Numbers visible',
+                      trailing: Switch.adaptive(
+                        value: isPrivacy,
+                        activeTrackColor: AppTheme.primaryEmerald,
+                        onChanged: (val) => context.read<PrivacyCubit>().setEnabled(val),
+                      ),
+                      onTap: () => context.read<PrivacyCubit>().toggle(),
+                    );
+                  },
+                ),
+                _SettingsTile(
+                  icon: Icons.backup_rounded,
+                  title: 'Data & Backups',
+                  subtitle: 'Back up, restore, or export statements',
+                  onTap: () => context.push('/backups'),
                 ),
               ],
             ),
@@ -452,12 +492,14 @@ class _SettingsTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.trailing,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -503,7 +545,8 @@ class _SettingsTile extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
+            trailing ??
+                Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
           ],
         ),
       ),

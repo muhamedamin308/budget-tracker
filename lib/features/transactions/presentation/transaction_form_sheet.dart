@@ -195,7 +195,7 @@ class _TransactionFormSheet extends StatelessWidget {
 
           // Wallet
           const SizedBox(height: 22),
-          const _SectionLabel(text: 'From wallet', icon: Icons.wallet_rounded),
+          _SectionLabel(text: isIncome ? 'To wallet' : 'From wallet', icon: Icons.wallet_rounded),
           const SizedBox(height: 10),
           if (state.wallets.isEmpty)
             const _EmptyCard(

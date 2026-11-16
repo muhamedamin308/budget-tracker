@@ -20,6 +20,16 @@ import 'package:budget_tracker/core/di/injection.dart' as _i263;
 import 'package:budget_tracker/core/router/app_router.dart' as _i729;
 import 'package:budget_tracker/core/services/widget_sync_service.dart' as _i645;
 import 'package:budget_tracker/core/theme/theme_cubit.dart' as _i65;
+import 'package:budget_tracker/features/backup/data/backup_module.dart'
+    as _i698;
+import 'package:budget_tracker/features/backup/data/backup_repository_impl.dart'
+    as _i504;
+import 'package:budget_tracker/features/backup/data/export_service.dart'
+    as _i27;
+import 'package:budget_tracker/features/backup/domain/backup_repository.dart'
+    as _i597;
+import 'package:budget_tracker/features/backup/presentation/backup_cubit.dart'
+    as _i741;
 import 'package:budget_tracker/features/budget/data/budget_repository_impl.dart'
     as _i13;
 import 'package:budget_tracker/features/budget/domain/budget_repository.dart'
@@ -44,6 +54,10 @@ import 'package:budget_tracker/features/recurring/domain/recurring_use_cases.dar
     as _i31;
 import 'package:budget_tracker/features/recurring/presentation/recurring_bloc.dart'
     as _i167;
+import 'package:budget_tracker/features/security/presentation/privacy_cubit.dart'
+    as _i121;
+import 'package:budget_tracker/features/security/presentation/security_cubit.dart'
+    as _i612;
 import 'package:budget_tracker/features/shell/presentation/month_cubit.dart'
     as _i256;
 import 'package:budget_tracker/features/stats/domain/watch_month_stats.dart'
@@ -81,6 +95,7 @@ extension GetItInjectableX on _i174.GetIt {
   }) {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final databaseModule = _$DatabaseModule();
+    final backupModule = _$BackupModule();
     gh.singleton<_i729.AppRouter>(() => _i729.AppRouter());
     gh.lazySingleton<_i1070.AppDatabase>(() => databaseModule.appDatabase);
     gh.lazySingleton<_i661.BudgetDao>(
@@ -98,16 +113,34 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i983.WalletDao>(
       () => _i983.WalletDao(gh<_i1070.AppDatabase>()),
     );
+    gh.lazySingleton<_i27.ExportService>(
+      () => backupModule.exportService(gh<_i1070.AppDatabase>()),
+    );
     gh.lazySingleton<_i93.RecurringRepository>(
       () => _i1043.RecurringRepositoryImpl(gh<_i657.RecurringDao>()),
     );
     gh.lazySingleton<_i226.BudgetRepository>(
       () => _i13.BudgetRepositoryImpl(gh<_i661.BudgetDao>()),
     );
+    gh.lazySingleton<_i597.BackupRepository>(
+      () => _i504.BackupRepositoryImpl(gh<_i1070.AppDatabase>()),
+    );
+    gh.factory<_i741.BackupCubit>(
+      () => _i741.BackupCubit(
+        gh<_i597.BackupRepository>(),
+        gh<_i27.ExportService>(),
+      ),
+    );
     gh.lazySingleton<_i25.WalletRepository>(
       () => _i328.WalletRepositoryImpl(gh<_i983.WalletDao>()),
     );
     gh.singleton<_i65.ThemeCubit>(() => _i65.ThemeCubit(gh<_i983.WalletDao>()));
+    gh.singleton<_i121.PrivacyCubit>(
+      () => _i121.PrivacyCubit(gh<_i983.WalletDao>()),
+    );
+    gh.singleton<_i612.SecurityCubit>(
+      () => _i612.SecurityCubit(gh<_i983.WalletDao>()),
+    );
     gh.lazySingleton<_i123.TransactionRepository>(
       () => _i20.TransactionRepositoryImpl(
         gh<_i584.TransactionDao>(),
@@ -292,3 +325,5 @@ extension GetItInjectableX on _i174.GetIt {
 }
 
 class _$DatabaseModule extends _i263.DatabaseModule {}
+
+class _$BackupModule extends _i698.BackupModule {}
