@@ -69,7 +69,7 @@ class BudgetWidgetProvider : HomeWidgetProvider() {
                     if (over) View.VISIBLE else View.GONE
                 )
 
-                // Tap the card: open the app
+                // 1. Tap the container: open app home
                 val homeIntent = HomeWidgetLaunchIntent.getActivity(
                     context,
                     MainActivity::class.java,
@@ -77,13 +77,54 @@ class BudgetWidgetProvider : HomeWidgetProvider() {
                 )
                 setOnClickPendingIntent(R.id.widget_container, homeIntent)
 
-                // Tap "+ Expense": open the add-expense form
+                // 2. Tap "+ Income": open add income sheet
+                val addIncomeIntent = HomeWidgetLaunchIntent.getActivity(
+                    context,
+                    MainActivity::class.java,
+                    Uri.parse("budgettracker://add?kind=income")
+                )
+                setOnClickPendingIntent(R.id.widget_btn_add_income, addIncomeIntent)
+
+                // 3. Tap "+ Expense": open add expense sheet
                 val addExpenseIntent = HomeWidgetLaunchIntent.getActivity(
                     context,
                     MainActivity::class.java,
-                    Uri.parse("budgettracker://add-expense")
+                    Uri.parse("budgettracker://add?kind=expense")
                 )
                 setOnClickPendingIntent(R.id.widget_btn_add_expense, addExpenseIntent)
+
+                // 4. Quick Category Chips
+                val chipIds = intArrayOf(R.id.widget_chip_0, R.id.widget_chip_1, R.id.widget_chip_2)
+                var hasChips = false
+
+                for (i in 0 until 3) {
+                    val catId = try {
+                        widgetData.getInt("cat_${i}_id", -1)
+                    } catch (e: Exception) {
+                        -1
+                    }
+                    val catName = widgetData.getString("cat_${i}_name", "") ?: ""
+
+                    if (catId > 0 && catName.isNotEmpty()) {
+                        hasChips = true
+                        setViewVisibility(chipIds[i], View.VISIBLE)
+                        setTextViewText(chipIds[i], "+ $catName")
+
+                        val chipIntent = HomeWidgetLaunchIntent.getActivity(
+                            context,
+                            MainActivity::class.java,
+                            Uri.parse("budgettracker://add?kind=expense&categoryId=$catId")
+                        )
+                        setOnClickPendingIntent(chipIds[i], chipIntent)
+                    } else {
+                        setViewVisibility(chipIds[i], View.GONE)
+                    }
+                }
+
+                setViewVisibility(
+                    R.id.widget_category_chips_row,
+                    if (hasChips) View.VISIBLE else View.GONE
+                )
             }
 
             appWidgetManager.updateAppWidget(appWidgetId, views)

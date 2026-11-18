@@ -251,12 +251,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i1061.ArchiveCategory>(
       () => _i1061.ArchiveCategory(gh<_i601.CategoryRepository>()),
     );
-    gh.singleton<_i645.WidgetSyncService>(
-      () => _i645.WidgetSyncServiceImpl(
-        gh<_i403.WatchBalance>(),
-        gh<_i1004.WatchBudgetStatus>(),
-      ),
-    );
     gh.factory<_i873.BalanceBloc>(
       () => _i873.BalanceBloc(gh<_i403.WatchBalance>()),
     );
@@ -277,6 +271,13 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i403.WatchMonthTransactions>(),
         gh<_i403.DeleteTransaction>(),
         gh<_i403.RestoreTransaction>(),
+      ),
+    );
+    gh.singleton<_i645.WidgetSyncService>(
+      () => _i645.WidgetSyncServiceImpl(
+        gh<_i403.WatchBalance>(),
+        gh<_i1004.WatchBudgetStatus>(),
+        gh<_i365.CategoryDao>(),
       ),
     );
     gh.factory<_i403.AddIncome>(

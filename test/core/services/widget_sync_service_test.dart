@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:budget_tracker/core/database/daos/category_dao.dart';
 import 'package:budget_tracker/core/services/widget_sync_service.dart';
 import 'package:budget_tracker/features/budget/domain/budget_repository.dart';
 import 'package:budget_tracker/features/budget/domain/budget_status.dart';
@@ -14,11 +15,14 @@ class MockTransactionRepository extends Mock
 
 class MockBudgetRepository extends Mock implements BudgetRepository {}
 
+class MockCategoryDao extends Mock implements CategoryDao {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockTransactionRepository transactionRepository;
   late MockBudgetRepository budgetRepository;
+  late MockCategoryDao categoryDao;
   late WatchBalance watchBalance;
   late WatchBudgetStatus watchBudgetStatus;
   late StreamController<int> balanceController;
@@ -28,6 +32,7 @@ void main() {
   setUp(() {
     transactionRepository = MockTransactionRepository();
     budgetRepository = MockBudgetRepository();
+    categoryDao = MockCategoryDao();
     balanceController = StreamController<int>.broadcast();
     budgetController = StreamController<BudgetStatus>.broadcast();
 
@@ -37,10 +42,12 @@ void main() {
     when(() => budgetRepository.watchStatus(any())).thenAnswer(
       (_) => budgetController.stream,
     );
+    when(() => categoryDao.getTopUsedExpenseCategories(limit: any(named: 'limit')))
+        .thenAnswer((_) async => []);
 
     watchBalance = WatchBalance(transactionRepository);
     watchBudgetStatus = WatchBudgetStatus(budgetRepository);
-    service = WidgetSyncServiceImpl(watchBalance, watchBudgetStatus);
+    service = WidgetSyncServiceImpl(watchBalance, watchBudgetStatus, categoryDao);
   });
 
   tearDown(() {
@@ -70,4 +77,3 @@ void main() {
     await service.syncNow();
   });
 }
-
