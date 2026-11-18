@@ -17,13 +17,19 @@ import '../../budget/presentation/budget_bloc.dart';
 import '../../shell/presentation/month_cubit.dart';
 import '../domain/month_stats.dart';
 import 'stats_bloc.dart';
+import 'stats_charts.dart';
 
 const List<Color> _palette = [
-  Color(0xFF10B981),
-  Color(0xFF3B82F6),
-  Color(0xFFF59E0B),
-  Color(0xFF8B5CF6),
-  Color(0xFFEC4899),
+  Color(0xFF10B981), // emerald
+  Color(0xFF3B82F6), // blue
+  Color(0xFFF59E0B), // amber
+  Color(0xFF8B5CF6), // violet
+  Color(0xFFEC4899), // pink
+  Color(0xFF06B6D4), // cyan
+  Color(0xFFF97316), // orange
+  Color(0xFF84CC16), // lime
+  Color(0xFF6366F1), // indigo
+  Color(0xFF14B8A6), // teal
 ];
 const Color _othersColor = Color(0xFF94A3B8);
 
@@ -255,6 +261,23 @@ class _StatsContent extends StatelessWidget {
   final MonthStats monthStats;
   final StatsBucketType bucketType;
 
+  List<CategorySlice> _slices() {
+    final top = monthStats.byCategory.take(8).toList();
+    final others = monthStats.byCategory
+        .skip(8)
+        .fold<int>(0, (sum, c) => sum + c.amountMinor);
+    return [
+      for (var i = 0; i < top.length; i++)
+        CategorySlice(
+          name: top[i].name,
+          amount: top[i].amountMinor,
+          color: _palette[i % _palette.length],
+        ),
+      if (others > 0)
+        CategorySlice(name: 'Others', amount: others, color: _othersColor),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasSpending = monthStats.expenseMinor > 0;
@@ -268,53 +291,66 @@ class _StatsContent extends StatelessWidget {
           delay: const Duration(milliseconds: 50),
           child: _BudgetCard(month: monthStats.month),
         ),
-        if (hasSpending) ...[
+        if (!hasSpending) ...[
+          const SizedBox(height: 24),
+          const EntranceAnimation(
+            delay: Duration(milliseconds: 100),
+            child: _EmptyCard(
+              icon: Icons.pie_chart_outline_rounded,
+              message: 'No expenses recorded this month.',
+            ),
+          ),
+        ] else ...[
           const SizedBox(height: 14),
           EntranceAnimation(
             delay: const Duration(milliseconds: 90),
             child: _InsightsRow(stats: monthStats),
           ),
-        ],
-        const SizedBox(height: 24),
-        EntranceAnimation(
-          delay: const Duration(milliseconds: 130),
-          child: const _SectionTitle('Where it went'),
-        ),
-        EntranceAnimation(
-          delay: const Duration(milliseconds: 140),
-          child: hasSpending
-              ? _CategoriesCard(stats: monthStats)
-              : const _EmptyCard(
-                  icon: Icons.pie_chart_outline_rounded,
-                  message: 'No expenses recorded this month.',
-                ),
-        ),
-        const SizedBox(height: 24),
-        EntranceAnimation(
-          delay: const Duration(milliseconds: 180),
-          child: _SectionTitle(
-            'Spending trend',
-            trailing: _BucketToggle(
-              value: bucketType,
-              onChanged: (type) =>
-                  context.read<StatsBloc>().add(BucketToggled(type)),
+          const SizedBox(height: 20),
+          EntranceAnimation(
+            delay: const Duration(milliseconds: 130),
+            child: CategoryDonutCard(
+              slices: _slices(),
+              total: monthStats.expenseMinor,
             ),
           ),
-        ),
-        EntranceAnimation(
-          delay: const Duration(milliseconds: 190),
-          child: hasSpending
-              ? _TrendCard(
-                  buckets: bucketType == StatsBucketType.daily
-                      ? monthStats.dailyBuckets
-                      : monthStats.weeklyBuckets,
-                  bucketType: bucketType,
-                )
-              : const _EmptyCard(
-                  icon: Icons.show_chart_rounded,
-                  message: 'No spending trend to chart.',
-                ),
-        ),
+          const SizedBox(height: 14),
+          EntranceAnimation(
+            delay: const Duration(milliseconds: 160),
+            child: SpendingPaceCard(stats: monthStats),
+          ),
+          const SizedBox(height: 24),
+          EntranceAnimation(
+            delay: const Duration(milliseconds: 190),
+            child: _SectionTitle(
+              'Spending trend',
+              trailing: _BucketToggle(
+                value: bucketType,
+                onChanged: (type) =>
+                    context.read<StatsBloc>().add(BucketToggled(type)),
+              ),
+            ),
+          ),
+          EntranceAnimation(
+            delay: const Duration(milliseconds: 200),
+            child: _TrendCard(
+              buckets: bucketType == StatsBucketType.daily
+                  ? monthStats.dailyBuckets
+                  : monthStats.weeklyBuckets,
+              bucketType: bucketType,
+            ),
+          ),
+          const SizedBox(height: 14),
+          EntranceAnimation(
+            delay: const Duration(milliseconds: 230),
+            child: WeekdayPatternCard(buckets: monthStats.dailyBuckets),
+          ),
+          const SizedBox(height: 14),
+          EntranceAnimation(
+            delay: const Duration(milliseconds: 260),
+            child: SpendingCalendarCard(buckets: monthStats.dailyBuckets),
+          ),
+        ],
       ],
     );
   }
@@ -893,224 +929,6 @@ class _InsightTile extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Categories: stacked share bar + ranked rows
 // ---------------------------------------------------------------------------
-
-class _CategoriesCard extends StatelessWidget {
-  const _CategoriesCard({required this.stats});
-
-  final MonthStats stats;
-
-  @override
-  Widget build(BuildContext context) {
-    final total = stats.expenseMinor;
-    final top = stats.byCategory.take(5).toList();
-    final othersAmount = stats.byCategory
-        .skip(5)
-        .fold<int>(0, (sum, c) => sum + c.amountMinor);
-
-    final entries = <({String name, int amount, Color color})>[
-      for (var i = 0; i < top.length; i++)
-        (
-          name: top[i].name,
-          amount: top[i].amountMinor,
-          color: _palette[i % _palette.length],
-        ),
-      if (othersAmount > 0)
-        (name: 'Others', amount: othersAmount, color: _othersColor),
-    ];
-
-    return _Surface(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Total spent',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        formatMinor(total),
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.7,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                '${stats.byCategory.length} categories',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: SizedBox(
-              height: 14,
-              child: Row(
-                children: [
-                  for (var i = 0; i < entries.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 3),
-                    Expanded(
-                      flex: math.max(1, entries[i].amount),
-                      child: Container(color: entries[i].color),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          for (var i = 0; i < entries.length; i++)
-            _CategoryRow(
-              rank: i + 1,
-              name: entries[i].name,
-              amount: entries[i].amount,
-              share: entries[i].amount / total,
-              color: entries[i].color,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CategoryRow extends StatelessWidget {
-  const _CategoryRow({
-    required this.rank,
-    required this.name,
-    required this.amount,
-    required this.share,
-    required this.color,
-  });
-
-  final int rank;
-  final String name;
-  final int amount;
-  final double share;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final initial = name.isEmpty ? '?' : name.characters.first.toUpperCase();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              initial,
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-                color: color,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      formatMinor(amount),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13.5,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: TweenAnimationBuilder<double>(
-                          tween: Tween(
-                            begin: 0,
-                            end: share.clamp(0.0, 1.0).toDouble(),
-                          ),
-                          duration: const Duration(milliseconds: 600),
-                          curve: Curves.easeOutCubic,
-                          builder: (context, value, _) =>
-                              LinearProgressIndicator(
-                                value: value,
-                                minHeight: 6,
-                                color: color,
-                                backgroundColor: color.withValues(alpha: 0.12),
-                              ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    SizedBox(
-                      width: 40,
-                      child: Text(
-                        '${(share * 100).toStringAsFixed(0)}%',
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Trend: area line chart

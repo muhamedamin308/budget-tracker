@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/di/injection.dart';
@@ -280,14 +281,19 @@ class _HeroCard extends StatelessWidget {
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                     iconSize: 20,
-                                    tooltip: isPrivacy ? 'Show balance' : 'Hide balance',
+                                    tooltip: isPrivacy
+                                        ? 'Show balance'
+                                        : 'Hide balance',
                                     icon: Icon(
                                       isPrivacy
                                           ? Icons.visibility_off_rounded
                                           : Icons.visibility_rounded,
-                                      color: Colors.white.withValues(alpha: 0.85),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.85,
+                                      ),
                                     ),
-                                    onPressed: () => context.read<PrivacyCubit>().toggle(),
+                                    onPressed: () =>
+                                        context.read<PrivacyCubit>().toggle(),
                                   );
                                 },
                               ),
@@ -986,7 +992,22 @@ class _TransactionsSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final groups = _groupByDay(transactions);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    final month = context.watch<MonthCubit>().state;
+    final now = DateTime.now();
+    final isCurrentMonth = month.year == now.year && month.month == now.month;
+    final cutoff = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(const Duration(days: 2));
+
+    final shown = isCurrentMonth
+        ? transactions.where((t) => !t.createdAt.isBefore(cutoff)).toList()
+        : transactions;
+    final groups = _groupByDay(shown);
     final banner = errorMessage;
 
     return SliverPadding(
@@ -998,15 +1019,156 @@ class _TransactionsSliver extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 12),
               child: InlineErrorBanner(message: banner),
             ),
-          for (final entry in groups.entries)
-            _DayGroup(
-              day: entry.key,
-              transactions: entry.value,
-              onEdit: onEdit,
-              onDelete: (transaction) => context.read<TransactionsBloc>().add(
-                TransactionDeleted(transaction.id),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 0, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          isCurrentMonth ? 'Recent activity' : 'Activity',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ),
+                      if (isCurrentMonth) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: scheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'Last 2 days',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => context.push('/transactions'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.primaryEmerald,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  iconAlignment: IconAlignment.end,
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                  label: const Text(
+                    'See all',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (shown.isEmpty)
+            _RecentEmpty(onSeeAll: () => context.push('/transactions'))
+          else
+            for (final entry in groups.entries)
+              _DayGroup(
+                day: entry.key,
+                transactions: entry.value,
+                onEdit: onEdit,
+                onDelete: (transaction) => context.read<TransactionsBloc>().add(
+                  TransactionDeleted(transaction.id),
+                ),
+              ),
+          if (isCurrentMonth &&
+              shown.isNotEmpty &&
+              shown.length < transactions.length)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: OutlinedButton.icon(
+                onPressed: () => context.push('/transactions'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                icon: const Icon(Icons.history_rounded, size: 18),
+                label: Text(
+                  'View ${transactions.length - shown.length} older '
+                  '${transactions.length - shown.length == 1 ? 'transaction' : 'transactions'}',
+                ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentEmpty extends StatelessWidget {
+  const _RecentEmpty({required this.onSeeAll});
+
+  final VoidCallback onSeeAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryEmerald.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.hourglass_empty_rounded,
+              size: 26,
+              color: AppTheme.primaryEmerald,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Nothing in the last 2 days',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Older transactions are in your full history.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 14),
+          FilledButton.tonalIcon(
+            onPressed: onSeeAll,
+            icon: const Icon(Icons.history_rounded, size: 18),
+            label: const Text('View all transactions'),
+          ),
         ],
       ),
     );

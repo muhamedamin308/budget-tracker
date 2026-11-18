@@ -11,6 +11,7 @@ import '../../features/stats/presentation/stats_page.dart';
 import '../../features/shell/presentation/month_cubit.dart';
 import '../../features/shell/presentation/navigation_shell.dart';
 import '../../features/wallets/presentation/wallets_page.dart';
+import '../../features/transactions/presentation/transactions_history_page.dart';
 import '../../features/backup/presentation/backup_page.dart';
 
 @singleton
@@ -67,6 +68,10 @@ class AppRouter {
           GoRoute(
             path: '/wallets',
             builder: (context, state) => const WalletsPage(),
+          ),
+          GoRoute(
+            path: '/transactions',
+            builder: (context, state) => const TransactionsHistoryPage(),
           ),
           GoRoute(
             path: '/backups',
