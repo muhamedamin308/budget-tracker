@@ -7,7 +7,7 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- Header -->
+    <!-- Header: App Title + Dual Buttons (+ Income / + Expense) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -33,17 +33,32 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/widget_btn_add_income"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/widget_income_btn_background"
+            android:paddingLeft="8dp"
+            android:paddingTop="5dp"
+            android:paddingRight="8dp"
+            android:paddingBottom="5dp"
+            android:text="+ Income"
+            android:textColor="#34D399"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <TextView
             android:id="@+id/widget_btn_add_expense"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/widget_button_background"
-            android:paddingLeft="12dp"
-            android:paddingTop="6dp"
-            android:paddingRight="12dp"
-            android:paddingBottom="6dp"
+            android:paddingLeft="9dp"
+            android:paddingTop="5dp"
+            android:paddingRight="9dp"
+            android:paddingBottom="5dp"
             android:text="+ Expense"
             android:textColor="#FFFFFF"
-            android:textSize="11.5sp"
+            android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -51,10 +66,10 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="8dp"
         android:text="Total balance"
         android:textColor="#94A3B8"
-        android:textSize="11.5sp" />
+        android:textSize="11sp" />
 
     <TextView
         android:id="@+id/widget_balance_text"
@@ -64,18 +79,18 @@
         android:singleLine="true"
         android:text="0.00 EGP"
         android:textColor="#FFFFFF"
-        android:textSize="28sp"
+        android:textSize="26sp"
         android:textStyle="bold" />
 
-    <!-- Spacer pushes the budget block to the bottom when the widget is tall -->
+    <!-- Spacer -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:minHeight="8dp"
+        android:minHeight="4dp"
         android:orientation="horizontal" />
 
-    <!-- Budget row -->
+    <!-- Budget status row -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -91,7 +106,7 @@
             android:singleLine="true"
             android:text="Budget: No limit set"
             android:textColor="#CBD5E1"
-            android:textSize="11.5sp" />
+            android:textSize="11sp" />
 
         <TextView
             android:id="@+id/widget_budget_percent_text"
@@ -100,14 +115,14 @@
             android:layout_marginStart="8dp"
             android:text="0%"
             android:textColor="#34D399"
-            android:textSize="11.5sp"
+            android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="6dp"
-        android:layout_marginTop="6dp">
+        android:layout_height="5dp"
+        android:layout_marginTop="4dp">
 
         <ProgressBar
             android:id="@+id/widget_budget_progress"
@@ -128,5 +143,70 @@
             android:progressDrawable="@drawable/widget_progress_bar_over"
             android:visibility="gone" />
     </FrameLayout>
+
+    <!-- Quick Category Chips Row -->
+    <LinearLayout
+        android:id="@+id/widget_category_chips_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/widget_chip_0"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:background="@drawable/widget_chip_background"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:paddingLeft="4dp"
+            android:paddingTop="5dp"
+            android:paddingRight="4dp"
+            android:paddingBottom="5dp"
+            android:singleLine="true"
+            android:text="Food"
+            android:textColor="#E2E8F0"
+            android:textSize="11sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/widget_chip_1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:background="@drawable/widget_chip_background"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:paddingLeft="4dp"
+            android:paddingTop="5dp"
+            android:paddingRight="4dp"
+            android:paddingBottom="5dp"
+            android:singleLine="true"
+            android:text="Groceries"
+            android:textColor="#E2E8F0"
+            android:textSize="11sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/widget_chip_2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/widget_chip_background"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:paddingLeft="4dp"
+            android:paddingTop="5dp"
+            android:paddingRight="4dp"
+            android:paddingBottom="5dp"
+            android:singleLine="true"
+            android:text="Transport"
+            android:textColor="#E2E8F0"
+            android:textSize="11sp"
+            android:visibility="gone" />
+    </LinearLayout>
 
 </LinearLayout>

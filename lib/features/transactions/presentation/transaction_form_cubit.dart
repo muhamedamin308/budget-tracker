@@ -31,6 +31,7 @@ class TransactionFormCubit extends Cubit<TransactionFormState> {
   Future<void> initialize({
     required TransactionKind kind,
     TransactionEntity? transaction,
+    int? initialCategoryId,
   }) async {
     _transaction = transaction;
     emit(state.copyWith(isLoading: true, clearError: true));
@@ -54,6 +55,9 @@ class TransactionFormCubit extends Cubit<TransactionFormState> {
           : null;
       final selectedCategoryId =
           transaction?.categoryId ??
+          (initialCategoryId != null && active.any((c) => c.id == initialCategoryId)
+              ? initialCategoryId
+              : null) ??
           lastUsed?.id ??
           (active.isEmpty ? null : active.first.id);
 

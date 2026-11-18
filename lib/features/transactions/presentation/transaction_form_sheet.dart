@@ -18,6 +18,7 @@ Future<void> showTransactionForm(
   BuildContext context, {
   required TransactionKind kind,
   TransactionEntity? transaction,
+  int? initialCategoryId,
 }) {
   BalanceBloc? balanceBloc;
   try {
@@ -37,7 +38,11 @@ Future<void> showTransactionForm(
       Widget content = BlocProvider(
         create: (_) =>
             getIt<TransactionFormCubit>()
-              ..initialize(kind: kind, transaction: transaction),
+              ..initialize(
+                kind: kind,
+                transaction: transaction,
+                initialCategoryId: initialCategoryId,
+              ),
         child: _TransactionFormSheet(transaction: transaction),
       );
 

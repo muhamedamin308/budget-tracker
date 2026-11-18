@@ -19,6 +19,41 @@ class CategoryDao extends DatabaseAccessor<AppDatabase> {
     db.categories,
   )..where((category) => category.id.equals(id))).getSingleOrNull();
 
+  Future<List<Category>> getTopUsedExpenseCategories({int limit = 3}) async {
+    final usageCount = db.transactions.id.count();
+    final query = select(db.categories).join([
+      innerJoin(
+        db.transactions,
+        db.transactions.categoryId.equalsExp(db.categories.id),
+      ),
+    ])
+      ..where(
+        db.categories.type.equals(TransactionType.expense.index) &
+            db.categories.isArchived.equals(false),
+      )
+      ..addColumns([usageCount])
+      ..groupBy([db.categories.id])
+      ..orderBy([OrderingTerm.desc(usageCount)])
+      ..limit(limit);
+
+    final rows = await query.get();
+    final categories = rows.map((r) => r.readTable(db.categories)).toList();
+
+    // If fewer than limit, fill with remaining default expense categories
+    if (categories.length < limit) {
+      final existingIds = categories.map((c) => c.id).toSet();
+      final fallbackQuery = (select(db.categories)
+            ..where((c) =>
+                c.type.equals(TransactionType.expense.index) &
+                c.isArchived.equals(false) &
+                c.id.isNotIn(existingIds))
+            ..limit(limit - categories.length));
+      final fallbacks = await fallbackQuery.get();
+      categories.addAll(fallbacks);
+    }
+    return categories;
+  }
+
   Future<Category?> getLastUsedByType(TransactionType type) async {
     final query =
         select(db.categories).join([

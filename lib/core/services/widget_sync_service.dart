@@ -6,6 +6,7 @@ import 'package:injectable/injectable.dart';
 import '../../features/budget/domain/budget_status.dart';
 import '../../features/budget/domain/budget_use_cases.dart';
 import '../../features/transactions/domain/transaction_use_cases.dart';
+import '../database/daos/category_dao.dart';
 import '../utils/money_format.dart';
 
 abstract interface class WidgetSyncService {
@@ -20,10 +21,15 @@ abstract interface class WidgetSyncService {
 
 @Singleton(as: WidgetSyncService)
 class WidgetSyncServiceImpl implements WidgetSyncService {
-  WidgetSyncServiceImpl(this._watchBalance, this._watchBudgetStatus);
+  WidgetSyncServiceImpl(
+    this._watchBalance,
+    this._watchBudgetStatus,
+    this._categoryDao,
+  );
 
   final WatchBalance _watchBalance;
   final WatchBudgetStatus _watchBudgetStatus;
+  final CategoryDao _categoryDao;
 
   static const String _androidWidgetName = 'BudgetWidgetProvider';
   static const String _balanceTextKey = 'balance_text';
@@ -113,6 +119,23 @@ class WidgetSyncServiceImpl implements WidgetSyncService {
       await HomeWidget.saveWidgetData<bool>(_balanceIsNegativeKey, isNegative);
       await HomeWidget.saveWidgetData<String>(_budgetStatusTextKey, budgetStatusText);
       await HomeWidget.saveWidgetData<int>(_budgetProgressKey, budgetProgressPercent);
+
+      // Push top 3 categories for quick logging chips
+      try {
+        final topCategories = await _categoryDao.getTopUsedExpenseCategories(limit: 3);
+        for (var i = 0; i < 3; i++) {
+          if (i < topCategories.length) {
+            final cat = topCategories[i];
+            await HomeWidget.saveWidgetData<int>('cat_${i}_id', cat.id);
+            await HomeWidget.saveWidgetData<String>('cat_${i}_name', cat.name);
+            await HomeWidget.saveWidgetData<String>('cat_${i}_icon', cat.iconKey);
+          } else {
+            await HomeWidget.saveWidgetData<int>('cat_${i}_id', -1);
+            await HomeWidget.saveWidgetData<String>('cat_${i}_name', '');
+            await HomeWidget.saveWidgetData<String>('cat_${i}_icon', '');
+          }
+        }
+      } catch (_) {}
 
       await HomeWidget.updateWidget(androidName: _androidWidgetName);
     } catch (_) {

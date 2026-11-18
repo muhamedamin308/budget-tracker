@@ -50,14 +50,32 @@ class _BudgetTrackerAppState extends State<BudgetTrackerApp>
 
   void _handleWidgetUri(Uri? uri) {
     if (uri == null) return;
-    if (uri.scheme == 'budgettracker' &&
-        (uri.host == 'add-expense' || uri.path.contains('add-expense'))) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final context = AppRouter.rootNavigatorKey.currentContext;
-        if (context != null) {
-          showTransactionForm(context, kind: TransactionKind.expense);
-        }
-      });
+    if (uri.scheme == 'budgettracker') {
+      final host = uri.host;
+      final path = uri.path;
+
+      TransactionKind? kind;
+      if (host == 'add-income' || path.contains('add-income') || uri.queryParameters['kind'] == 'income') {
+        kind = TransactionKind.income;
+      } else if (host == 'add-expense' || path.contains('add-expense') || uri.queryParameters['kind'] == 'expense') {
+        kind = TransactionKind.expense;
+      }
+
+      if (kind != null) {
+        final categoryIdStr = uri.queryParameters['categoryId'];
+        final categoryId = categoryIdStr != null ? int.tryParse(categoryIdStr) : null;
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final context = AppRouter.rootNavigatorKey.currentContext;
+          if (context != null) {
+            showTransactionForm(
+              context,
+              kind: kind!,
+              initialCategoryId: categoryId,
+            );
+          }
+        });
+      }
     }
   }
 
