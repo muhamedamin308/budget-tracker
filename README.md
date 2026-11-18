@@ -4,6 +4,18 @@ A modern, private, and offline-first personal finance application built with **F
 
 ---
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="assets/images/screenshots-1-track.png" alt="Home overview, all transactions, add expense and transfer between wallets" width="100%">
+</p>
+
+<p align="center">
+  <img src="assets/images/screenshots-2-insights-settings.png" alt="Monthly insights, spending calendar and settings" width="75%">
+</p>
+
+---
+
 ## ✨ Features
 
 ### 💵 Core Accounting & Wallets
